@@ -1,0 +1,98 @@
+@media (max-width: 1023px) {
+    table[data-mobile-cards] {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        border-collapse: separate;
+    }
+    table[data-mobile-cards] > thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    table[data-mobile-cards] > tbody {
+        display: grid;
+        min-width: 0;
+        gap: 12px;
+        padding: 12px;
+    }
+    table[data-mobile-cards] > tbody > tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
+        border: 1px solid #d9dfe8;
+        border-radius: 12px;
+        background: #fff;
+        overflow-wrap: anywhere;
+    }
+    table[data-mobile-cards] > tbody > tr > td:not(.hidden) {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        min-width: 0;
+        max-width: 100%;
+        padding: 10px 12px;
+        position: static;
+        text-align: left;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    table[data-mobile-cards] td[data-label]:not([data-card-media='true'])::before {
+        content: attr(data-label);
+        display: block;
+        color: #586477;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    table[data-mobile-cards] td[data-card-wide='true'],
+    table[data-mobile-cards] td[colspan] {
+        grid-column: 1 / -1;
+    }
+    table[data-mobile-cards] td[data-card-media='true'] {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    table[data-mobile-cards] td > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+    table[data-mobile-cards] td .whitespace-nowrap {
+        white-space: normal;
+    }
+    table[data-mobile-cards] td [class*='group-hover:opacity'] {
+        opacity: 1;
+    }
+    table[data-mobile-cards] input:not([type='checkbox']):not([type='radio']),
+    table[data-mobile-cards] select {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+    .mobile-wrap-tabs {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+    .mobile-wrap-tabs > * {
+        min-width: 0;
+        white-space: normal;
+    }
+    .mobile-wrap-tabs .tab-btn {
+        padding-inline: 12px;
+    }
+    main > *, main form, main section {
+        min-width: 0;
+    }
+    .app-shell {
+        height: 100vh;
+        height: 100dvh;
+    }
+}

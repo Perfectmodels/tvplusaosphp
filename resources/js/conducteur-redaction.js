@@ -1,0 +1,426 @@
+import Alpine from 'alpinejs';
+
+if (typeof window !== 'undefined') {
+    window.Alpine = window.Alpine || Alpine;
+}
+
+export default function conducteurRedaction() {
+    return {
+        // ============ ÉTAT =============
+        conducteurId: null,
+        csrf: '',
+        routes: {},
+        sequences: [],
+        dureeActuelle: '00:00',
+
+        modeReorg: false,
+        ordreEnCours: false,
+        modaleSequenceVisible: false,
+        modaleSuppressionVisible: false,
+        modeEdition: false,
+        sequenceEnCoursId: null,
+        envoiEnCours: false,
+        suppressionTotaleEnCours: false,
+        seqASupprimer: { id: null, titre: '' },
+
+        // Invitation d'intervenants : liste ordonnée (le 1ᵉʳ = principal)
+        inviteSelection: '',
+        inviteSearch: '',
+        inviteDropdownOpen: false,
+
+        formSeq: {
+            title: '',
+            type: 'SUJET',
+            duration_minutes: 2,
+            duration_seconds: 0,
+            intervenant_ids: [],
+            intervenants: [],
+            fonction_text: '',
+            journaliste_responsable_id: '',
+            note_regie: '',
+            angle_editorial: '',
+            alerte_info: false,
+        },
+
+        toastVisible: false,
+        toastType: 'success',
+        toastMessage: '',
+        _toastT: null,
+
+        // ============ INIT ============
+        init(cfg) {
+            // Alpine appelle aussi `init()` automatiquement, sans argument.
+            if (!cfg || typeof cfg !== 'object') return;
+            this.conducteurId = cfg.conducteurId;
+            this.csrf = cfg.csrfToken;
+            this.routes = cfg.routes;
+            this.sequences = cfg.sequences || [];
+            this.dureeActuelle = cfg.dureeActuelle || '00:00';
+        },
+
+        // ============ CRUD SÉQUENCE ============
+        ouvrirModaleSequence(seqId = null) {
+            if (this.envoiEnCours || this.suppressionTotaleEnCours) return;
+            this.modeEdition = !!seqId;
+            this.sequenceEnCoursId = seqId;
+            this.envoiEnCours = false;
+            this.inviteSelection = '';
+
+            this.formSeq = {
+                title: '',
+                type: 'SUJET',
+                duration_minutes: 2,
+                duration_seconds: 0,
+                intervenant_ids: [],
+                intervenants: [],
+                fonction_text: '',
+                journaliste_responsable_id: '',
+                note_regie: '',
+                angle_editorial: '',
+                alerte_info: false,
+            };
+
+            if (seqId) {
+                const payloadUrl = this.routes.seqPayloadBase.replace('_SEQ_', seqId);
+                fetch(payloadUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(json => {
+                        if (!json) return;
+                        this.formSeq = {
+                            title: json.title || '',
+                            type: json.type_value || 'SUJET',
+                            duration_minutes: json.duration_minutes_floor ?? 2,
+                            duration_seconds: json.duration_seconds_remain ?? 0,
+                            intervenant_ids: (json.intervenant_ids || []).map(Number),
+                            intervenants: json.intervenants || [],
+                            fonction_text: json.fonction_text || '',
+                            journaliste_responsable_id: json.journaliste_responsable_id || '',
+                            note_regie: json.note_regie || '',
+                            angle_editorial: json.angle_editorial || '',
+                            alerte_info: !!json.alerte_info,
+                        };
+                    })
+                    .catch(() => {});
+            }
+
+            this.modaleSequenceVisible = true;
+        },
+
+        fermerToutesModales() {
+            this.modaleSequenceVisible = false;
+            this.modaleSuppressionVisible = false;
+            this.envoiEnCours = false;
+            this.sequenceEnCoursId = null;
+        },
+
+        // ============ INVITÉS (1 ou plusieurs par sujet) ============
+        ajouterInvite() {
+            const id = Number(this.inviteSelection);
+            if (!id) return;
+            if (this.formSeq.intervenant_ids.includes(id)) {
+                this.showToast('Cet invité est déjà dans le sujet.', 'info');
+                return;
+            }
+            const isDebat = String(this.formSeq.type || '').toUpperCase() === 'DÉBAT';
+            if (isDebat && this.formSeq.intervenant_ids.length >= 4) {
+                this.showToast('Un débat ne peut comporter que 4 intervenants maximum.', 'error');
+                return;
+            }
+            this.formSeq.intervenant_ids.push(id);
+            this.inviteSelection = '';
+            this.inviteSearch = '';
+            this.inviteDropdownOpen = false;
+            this.autoFillFonctionFromIntervenant();
+        },
+
+        retirerInvite(index) {
+            this.formSeq.intervenant_ids.splice(index, 1);
+        },
+
+        deplacerInviteHaut(index) {
+            if (index <= 0) return;
+            const tmp = this.formSeq.intervenant_ids[index];
+            this.formSeq.intervenant_ids.splice(index, 1);
+            this.formSeq.intervenant_ids.splice(index - 1, 0, tmp);
+        },
+
+        deplacerInviteBas(index) {
+            const liste = this.formSeq.intervenant_ids;
+            if (index >= liste.length - 1) return;
+            const tmp = liste[index];
+            liste.splice(index, 1);
+            liste.splice(index + 1, 0, tmp);
+        },
+
+        intervenantCorrespond(haystack, search) {
+            const q = String(search || '').trim().toLowerCase();
+            if (!q) return true;
+            return String(haystack || '').toLowerCase().includes(q);
+        },
+
+        labelIntervenant(id) {
+            const sel = document.querySelector('#invite-ajout-select option[value="' + id + '"]');
+            if (sel && sel.value) return sel.textContent.trim();
+            const connu = (this.formSeq.intervenants || []).find(i => Number(i.id) === Number(id));
+            return connu && connu.label ? connu.label : 'Invité #' + id;
+        },
+
+        autoFillFonctionFromIntervenant() {
+            // Pré-remplissage depuis l'invité principal (le 1ᵉʳ de la liste)
+            const id = this.formSeq.intervenant_ids[0];
+            if (!id) return;
+            const sel = document.querySelector('#invite-ajout-select option[value="' + id + '"]');
+            if (!sel) return;
+            const f = sel.getAttribute('data-fonction');
+            if (f && !this.formSeq.fonction_text) {
+                this.formSeq.fonction_text = f;
+            }
+        },
+
+        async soumettreModaleSequence() {
+            if (!this.formSeq.title || this.envoiEnCours) return;
+            this.envoiEnCours = true;
+
+            const formData = new FormData();
+            Object.keys(this.formSeq).forEach(k => {
+                const v = this.formSeq[k];
+                // Invités gérés à part (JSON) + liste de détails hors formulaire
+                if (k === 'intervenant_ids' || k === 'intervenants') return;
+                if (k === 'alerte_info') { formData.append(k, v ? '1' : '0'); return; }
+                if (v === null || v === undefined || v === '') return;
+                formData.append(k, typeof v === 'number' ? String(v) : v);
+            });
+            // Toujours envoyé, même vide : « [] » = retirer tous les invités
+            formData.append('intervenant_ids', JSON.stringify(this.formSeq.intervenant_ids || []));
+            formData.append('conducteur_id', String(this.conducteurId));
+
+            let url;
+            let method = 'POST';
+            if (this.modeEdition && this.sequenceEnCoursId) {
+                url = this.routes.seqUpdateBase.replace('_SEQ_', this.sequenceEnCoursId);
+                method = 'PATCH';
+                formData.append('_method', 'PATCH');
+            } else {
+                url = this.routes.seqStore;
+            }
+
+            try {
+                const resp = await fetch(url, {
+                    method,
+                    headers: {
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        // JSON strict : jamais de redirection back() à suivre
+                        // (ERR_TOO_MANY_REDIRECTS) + 422 de validation en JSON.
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                });
+
+                // Filet de sécurité : une redirection signale une anomalie
+                // (session expirée, middleware…) → on la suit volontairement.
+                if (resp.redirected) {
+                    window.location.href = resp.url;
+                    return;
+                }
+
+                const json = await resp.json().catch(() => null);
+
+                if (resp.ok) {
+                    this.showToast((json && json.message) || (this.modeEdition ? 'Modifications enregistrées.' : 'Élément ajouté au conducteur.'), 'success');
+                    setTimeout(() => window.location.reload(), 400);
+                    return;
+                }
+
+                // 422 (validation) / 403 (droits) / 419 (csrf) → message serveur
+                if (json && json.errors) {
+                    const premier = Object.values(json.errors)[0];
+                    this.showToast(Array.isArray(premier) ? premier[0] : String(premier), 'error');
+                    return;
+                }
+                this.showToast((json && json.message) || 'Une erreur est survenue.', 'error');
+            } catch (e) {
+                console.error(e);
+                this.showToast('Erreur réseau.', 'error');
+            } finally {
+                this.envoiEnCours = false;
+            }
+        },
+
+        async supprimerSequence(id, titre) {
+            if (this.envoiEnCours || this.suppressionTotaleEnCours) return;
+            const confirmation = window.TvAlert?.confirmDelete
+                ? await window.TvAlert.confirmDelete({
+                    title: 'Supprimer cet élément ?',
+                    text: `« ${titre || ''} » — cette action est irréversible. Les horaires des éléments suivants seront recalculés.`,
+                })
+                : { isConfirmed: confirm(`Supprimer « ${titre || ''} » ? Cette action est irréversible et recalculera les horaires des éléments suivants.`) };
+            if (! confirmation.isConfirmed) return;
+            this.seqASupprimer = { id, titre: titre || '' };
+            await this.confirmerSuppression();
+        },
+
+        async confirmerSuppression() {
+            if (!this.seqASupprimer.id || this.envoiEnCours) return;
+            this.envoiEnCours = true;
+            try {
+                const url = this.routes.seqDestroyBase.replace('_SEQ_', this.seqASupprimer.id);
+                const resp = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ _method: 'DELETE' })
+                });
+                if (resp.redirected) {
+                    window.location.href = resp.url;
+                    return;
+                }
+                const json = await resp.json().catch(() => null);
+                if (resp.ok) {
+                    this.showToast((json && json.message) || `« ${this.seqASupprimer.titre} » supprimé.`, 'success');
+                    setTimeout(() => window.location.reload(), 400);
+                    return;
+                }
+                this.showToast((json && json.message) || 'Impossible de supprimer.', 'error');
+            } catch (e) {
+                this.showToast('Erreur réseau.', 'error');
+            } finally {
+                this.envoiEnCours = false;
+            }
+        },
+
+        async supprimerTout() {
+            if (this.suppressionTotaleEnCours || this.envoiEnCours) return;
+            const confirmation = window.TvAlert?.confirmDelete
+                ? await window.TvAlert.confirmDelete({
+                    title: 'Supprimer TOUS les éléments du conducteur ?',
+                    text: 'Cette action est irréversible.',
+                    confirmText: '<i class="fa-solid fa-trash mr-1.5"></i> Tout supprimer',
+                })
+                : { isConfirmed: confirm('Supprimer TOUS les éléments du conducteur ? Cette action est irréversible.') };
+            if (! confirmation.isConfirmed) return;
+            this.suppressionTotaleEnCours = true;
+            let echecs = 0;
+            let i = this.sequences.length - 1;
+            const supprNext = async () => {
+                if (i < 0) {
+                    this.suppressionTotaleEnCours = false;
+                    if (echecs > 0) {
+                        this.showToast(`${echecs} élément(s) n'ont pas pu être supprimé(s). La page va être rechargée pour mettre à jour l'affichage.`, 'error');
+                    } else {
+                        this.showToast('Tous les éléments ont été supprimés.', 'success');
+                    }
+                    setTimeout(() => window.location.reload(), 800);
+                    return;
+                }
+                const s = this.sequences[i];
+                try {
+                    const url = this.routes.seqDestroyBase.replace('_SEQ_', s.id);
+                    const resp = await fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrf,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({})
+                    });
+                    if (! resp.ok) echecs++;
+                } catch { echecs++; }
+                i--;
+                setTimeout(supprNext, 30);
+            };
+            supprNext();
+        },
+
+        // ============ RÉORGANISATION ============
+        toggleModeReorganisation() {
+            this.modeReorg = !this.modeReorg;
+            if (!this.modeReorg && this.sequences.length > 1) {
+                this.envoyerReorder();
+            }
+        },
+
+        deplacerHaut(idx) {
+            if (idx <= 0 || this.ordreEnCours) return;
+            const tmp = this.sequences[idx];
+            this.sequences.splice(idx, 1);
+            this.sequences.splice(idx - 1, 0, tmp);
+            this.envoyerReorder();
+        },
+
+        deplacerBas(idx) {
+            if (idx >= this.sequences.length - 1 || this.ordreEnCours) return;
+            const tmp = this.sequences[idx];
+            this.sequences.splice(idx, 1);
+            this.sequences.splice(idx + 1, 0, tmp);
+            this.envoyerReorder();
+        },
+
+        async envoyerReorder() {
+            if (this.ordreEnCours) return;
+            const ids = this.sequences.map(s => s.id);
+            this.ordreEnCours = true;
+            try {
+                const resp = await fetch(this.routes.reorder, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ ordered_ids: ids })
+                });
+                const json = await resp.json().catch(() => null);
+                if (resp.ok && json && json.ok) {
+                    (json.sequences || []).forEach(serv => {
+                        const idx = this.findSeqIndex(serv.id);
+                        if (idx === -1) return;
+                        this.sequences[idx].debut_hm = serv.heure_debut_calculee;
+                        this.sequences[idx].fin_hm   = serv.heure_fin_calculee;
+                        this.sequences[idx].duree_hm = serv.duree_hm;
+                    });
+                    if (json.duree_totale_hm) this.dureeActuelle = json.duree_totale_hm;
+                    this.showToast('Ordre mis à jour.', 'success');
+                }
+            } catch (e) {
+                console.error('Reorder error', e);
+            } finally {
+                this.ordreEnCours = false;
+            }
+        },
+
+        // ============ UTIL ============
+        findSeqIndex(id) {
+            return this.sequences.findIndex(s => Number(s.id) === Number(id));
+        },
+
+        showToast(msg, type = 'info', duree = 3500) {
+            this.toastMessage = msg;
+            this.toastType = type;
+            this.toastVisible = true;
+            if (this._toastT) clearTimeout(this._toastT);
+            this._toastT = setTimeout(() => { this.toastVisible = false; }, duree);
+        },
+    };
+}
+
+// Exposer globalement (Blade x-data utilise window.* convention Alpine)
+if (typeof window !== 'undefined') {
+    window.conducteurRedaction = conducteurRedaction;
+    if (window.Alpine) {
+        window.Alpine.data('conducteurRedaction', conducteurRedaction);
+    } else {
+        document.addEventListener('alpine:init', () => {
+            if (window.Alpine) window.Alpine.data('conducteurRedaction', conducteurRedaction);
+        });
+    }
+}

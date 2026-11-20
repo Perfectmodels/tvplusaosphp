@@ -1,0 +1,483 @@
+Loading composer repositories with package information
+Updating dependencies
+Lock file operations: 150 installs, 0 updates, 0 removals
+  - Locking bacon/bacon-qr-code (2.0.8)
+  - Locking brick/math (0.14.8)
+  - Locking carbonphp/carbon-doctrine-types (3.2.0)
+  - Locking clue/redis-protocol (v0.3.2)
+  - Locking clue/redis-react (v2.8.0)
+  - Locking composer/semver (3.4.4)
+  - Locking dasprid/enum (1.0.7)
+  - Locking dflydev/dot-access-data (v3.0.3)
+  - Locking doctrine/inflector (2.1.0)
+  - Locking doctrine/lexer (3.0.1)
+  - Locking dragonmantank/cron-expression (v3.6.0)
+  - Locking egulias/email-validator (4.0.4)
+  - Locking evenement/evenement (v3.0.2)
+  - Locking fakerphp/faker (v1.24.1)
+  - Locking filp/whoops (2.18.4)
+  - Locking firebase/php-jwt (v6.11.1)
+  - Locking fruitcake/php-cors (v1.4.0)
+  - Locking graham-campbell/result-type (v1.2.0)
+  - Locking guzzlehttp/guzzle (7.15.5)
+  - Locking guzzlehttp/promises (2.5.3)
+  - Locking guzzlehttp/psr7 (2.13.1)
+  - Locking guzzlehttp/uri-template (v1.0.11)
+  - Locking hamcrest/hamcrest-php (v3.0.0)
+  - Locking intervention/gif (4.2.4)
+  - Locking intervention/image (3.11.8)
+  - Locking laravel/boost (v2.7.0)
+  - Locking laravel/breeze (v2.4.2)
+  - Locking laravel/framework (v12.68.0)
+  - Locking laravel/mcp (v0.9.4)
+  - Locking laravel/pint (v1.30.5)
+  - Locking laravel/prompts (v0.3.24)
+  - Locking laravel/reverb (v1.11.1)
+  - Locking laravel/roster (v1.0.0)
+  - Locking laravel/sanctum (v4.3.3)
+  - Locking laravel/scout (v11.6.1)
+  - Locking laravel/serializable-closure (v2.0.16)
+  - Locking laravel/tinker (v2.11.1)
+  - Locking league/commonmark (2.10.0)
+  - Locking league/config (v1.2.0)
+  - Locking league/flysystem (3.35.3)
+  - Locking league/flysystem-local (3.35.3)
+  - Locking league/mime-type-detection (1.17.0)
+  - Locking league/uri (7.8.1)
+  - Locking league/uri-interfaces (7.8.1)
+  - Locking maennchen/zipstream-php (3.2.2)
+  - Locking masterminds/html5 (2.11.0)
+  - Locking mockery/mockery (1.6.15)
+  - Locking monolog/monolog (3.10.0)
+  - Locking myclabs/deep-copy (1.14.0)
+  - Locking nesbot/carbon (3.13.2)
+  - Locking nette/schema (v1.3.6)
+  - Locking nette/utils (v4.1.5)
+  - Locking nikic/php-parser (v5.8.0)
+  - Locking nunomaduro/collision (v8.9.5)
+  - Locking nunomaduro/termwind (v2.4.0)
+  - Locking phar-io/manifest (2.0.4)
+  - Locking phar-io/version (3.2.1)
+  - Locking phpoption/phpoption (1.10.0)
+  - Locking phpunit/php-code-coverage (12.5.7)
+  - Locking phpunit/php-file-iterator (6.0.2)
+  - Locking phpunit/php-invoker (6.0.0)
+  - Locking phpunit/php-text-template (5.0.0)
+  - Locking phpunit/php-timer (8.0.0)
+  - Locking phpunit/phpunit (12.5.34)
+  - Locking psr/clock (1.0.0)
+  - Locking psr/container (2.0.2)
+  - Locking psr/event-dispatcher (1.0.0)
+  - Locking psr/http-client (1.0.3)
+  - Locking psr/http-factory (1.1.0)
+  - Locking psr/http-message (2.0)
+  - Locking psr/log (3.0.2)
+  - Locking psr/simple-cache (3.0.0)
+  - Locking psy/psysh (v0.12.24)
+  - Locking pusher/pusher-php-server (7.3.0)
+  - Locking ralouphie/getallheaders (3.0.3)
+  - Locking ramsey/collection (2.1.1)
+  - Locking ramsey/uuid (4.9.3)
+  - Locking ratchet/rfc6455 (v0.4.1)
+  - Locking react/cache (v1.2.0)
+  - Locking react/dns (v1.14.0)
+  - Locking react/event-loop (v1.6.0)
+  - Locking react/promise (v3.3.0)
+  - Locking react/promise-timer (v1.11.0)
+  - Locking react/socket (v1.17.0)
+  - Locking react/stream (v1.4.0)
+  - Locking sebastian/cli-parser (4.2.1)
+  - Locking sebastian/comparator (7.1.8)
+  - Locking sebastian/complexity (5.0.0)
+  - Locking sebastian/diff (7.0.1)
+  - Locking sebastian/environment (8.1.2)
+  - Locking sebastian/exporter (7.0.3)
+  - Locking sebastian/global-state (8.0.3)
+  - Locking sebastian/lines-of-code (4.0.1)
+  - Locking sebastian/object-enumerator (7.0.0)
+  - Locking sebastian/object-reflector (5.0.0)
+  - Locking sebastian/recursion-context (7.0.1)
+  - Locking sebastian/type (6.0.4)
+  - Locking sebastian/version (6.0.0)
+  - Locking simplesoftwareio/simple-qrcode (4.2.0)
+  - Locking spatie/backtrace (1.8.2)
+  - Locking spatie/error-solutions (1.1.3)
+  - Locking spatie/flare-client-php (1.11.1)
+  - Locking spatie/ignition (1.16.0)
+  - Locking spatie/image (3.9.6)
+  - Locking spatie/image-optimizer (1.10.0)
+  - Locking spatie/laravel-ignition (2.12.0)
+  - Locking spatie/laravel-medialibrary (11.23.5)
+  - Locking spatie/laravel-package-tools (1.93.2)
+  - Locking spatie/laravel-permission (6.25.0)
+  - Locking spatie/temporary-directory (2.4.0)
+  - Locking staabm/side-effects-detector (1.0.5)
+  - Locking symfony/browser-kit (v7.4.17)
+  - Locking symfony/clock (v7.4.8)
+  - Locking symfony/console (v7.4.17)
+  - Locking symfony/css-selector (v7.4.17)
+  - Locking symfony/deprecation-contracts (v3.7.1)
+  - Locking symfony/dom-crawler (v7.4.17)
+  - Locking symfony/error-handler (v7.4.17)
+  - Locking symfony/event-dispatcher (v7.4.17)
+  - Locking symfony/event-dispatcher-contracts (v3.7.1)
+  - Locking symfony/finder (v7.4.17)
+  - Locking symfony/http-client (v7.4.17)
+  - Locking symfony/http-client-contracts (v3.7.1)
+  - Locking symfony/http-foundation (v7.4.17)
+  - Locking symfony/http-kernel (v7.4.17)
+  - Locking symfony/mailer (v7.4.17)
+  - Locking symfony/mime (v7.4.17)
+  - Locking symfony/polyfill-ctype (v1.37.0)
+  - Locking symfony/polyfill-intl-grapheme (v1.41.0)
+  - Locking symfony/polyfill-intl-idn (v1.42.0)
+  - Locking symfony/polyfill-intl-normalizer (v1.42.0)
+  - Locking symfony/polyfill-mbstring (v1.38.2)
+  - Locking symfony/polyfill-php80 (v1.37.0)
+  - Locking symfony/polyfill-php83 (v1.41.0)
+  - Locking symfony/polyfill-php84 (v1.38.1)
+  - Locking symfony/polyfill-php85 (v1.41.0)
+  - Locking symfony/polyfill-uuid (v1.37.0)
+  - Locking symfony/process (v7.4.17)
+  - Locking symfony/routing (v7.4.17)
+  - Locking symfony/service-contracts (v3.7.1)
+  - Locking symfony/string (v7.4.15)
+  - Locking symfony/translation (v7.4.17)
+  - Locking symfony/translation-contracts (v3.7.1)
+  - Locking symfony/uid (v7.4.17)
+  - Locking symfony/var-dumper (v7.4.17)
+  - Locking symfony/yaml (v7.4.17)
+  - Locking theseer/tokenizer (2.0.1)
+  - Locking tijsverkoyen/css-to-inline-styles (v2.4.0)
+  - Locking vlucas/phpdotenv (v5.7.0)
+  - Locking voku/portable-ascii (2.1.1)
+Writing lock file
+Installing dependencies from lock file (including require-dev)
+Package operations: 150 installs, 0 updates, 0 removals
+  - Downloading carbonphp/carbon-doctrine-types (3.2.0)
+  - Downloading clue/redis-protocol (v0.3.2)
+  - Downloading dasprid/enum (1.0.7)
+  - Downloading doctrine/inflector (2.1.0)
+  - Downloading doctrine/lexer (3.0.1)
+  - Downloading dragonmantank/cron-expression (v3.6.0)
+  - Downloading symfony/deprecation-contracts (v3.7.1)
+  - Downloading psr/container (2.0.2)
+  - Downloading fakerphp/faker (v1.24.1)
+  - Downloading firebase/php-jwt (v6.11.1)
+  - Downloading symfony/polyfill-mbstring (v1.38.2)
+  - Downloading symfony/http-foundation (v7.4.17)
+  - Downloading fruitcake/php-cors (v1.4.0)
+  - Downloading symfony/polyfill-php80 (v1.37.0)
+  - Downloading guzzlehttp/uri-template (v1.0.11)
+  - Downloading intervention/gif (4.2.4)
+  - Downloading intervention/image (3.11.8)
+  - Downloading symfony/polyfill-ctype (v1.37.0)
+  - Downloading symfony/yaml (v7.4.17)
+  - Downloading voku/portable-ascii (2.1.1)
+  - Downloading phpoption/phpoption (1.10.0)
+  - Downloading graham-campbell/result-type (v1.2.0)
+  - Downloading vlucas/phpdotenv (v5.7.0)
+  - Downloading symfony/css-selector (v7.4.17)
+  - Downloading tijsverkoyen/css-to-inline-styles (v2.4.0)
+  - Downloading symfony/var-dumper (v7.4.17)
+  - Downloading symfony/polyfill-uuid (v1.37.0)
+  - Downloading symfony/uid (v7.4.17)
+  - Downloading symfony/routing (v7.4.17)
+  - Downloading symfony/process (v7.4.17)
+  - Downloading symfony/polyfill-php85 (v1.41.0)
+  - Downloading symfony/polyfill-php84 (v1.38.1)
+  - Downloading symfony/polyfill-php83 (v1.41.0)
+  - Downloading symfony/polyfill-intl-normalizer (v1.42.0)
+  - Downloading symfony/polyfill-intl-idn (v1.42.0)
+  - Downloading symfony/mime (v7.4.17)
+  - Downloading symfony/service-contracts (v3.7.1)
+  - Downloading psr/event-dispatcher (1.0.0)
+  - Downloading symfony/event-dispatcher-contracts (v3.7.1)
+  - Downloading symfony/event-dispatcher (v7.4.17)
+  - Downloading psr/log (3.0.2)
+  - Downloading egulias/email-validator (4.0.4)
+  - Downloading symfony/mailer (v7.4.17)
+  - Downloading symfony/error-handler (v7.4.17)
+  - Downloading symfony/http-kernel (v7.4.17)
+  - Downloading symfony/finder (v7.4.17)
+  - Downloading symfony/polyfill-intl-grapheme (v1.41.0)
+  - Downloading symfony/string (v7.4.15)
+  - Downloading symfony/console (v7.4.17)
+  - Downloading ramsey/collection (2.1.1)
+  - Downloading brick/math (0.14.8)
+  - Downloading ramsey/uuid (4.9.3)
+  - Downloading psr/simple-cache (3.0.0)
+  - Downloading nunomaduro/termwind (v2.4.0)
+  - Downloading symfony/translation-contracts (v3.7.1)
+  - Downloading symfony/translation (v7.4.17)
+  - Downloading psr/clock (1.0.0)
+  - Downloading symfony/clock (v7.4.8)
+  - Downloading nesbot/carbon (3.13.2)
+  - Downloading monolog/monolog (3.10.0)
+  - Downloading psr/http-message (2.0)
+  - Downloading psr/http-factory (1.1.0)
+  - Downloading league/uri-interfaces (7.8.1)
+  - Downloading league/uri (7.8.1)
+  - Downloading league/mime-type-detection (1.17.0)
+  - Downloading league/flysystem-local (3.35.3)
+  - Downloading league/flysystem (3.35.3)
+  - Downloading nette/utils (v4.1.5)
+  - Downloading nette/schema (v1.3.6)
+  - Downloading dflydev/dot-access-data (v3.0.3)
+  - Downloading league/config (v1.2.0)
+  - Downloading league/commonmark (2.10.0)
+  - Downloading laravel/serializable-closure (v2.0.16)
+  - Downloading laravel/prompts (v0.3.24)
+  - Downloading psr/http-client (1.0.3)
+  - Downloading ralouphie/getallheaders (3.0.3)
+  - Downloading guzzlehttp/psr7 (2.13.1)
+  - Downloading guzzlehttp/promises (2.5.3)
+  - Downloading guzzlehttp/guzzle (7.15.5)
+  - Downloading laravel/framework (v12.68.0)
+  - Downloading composer/semver (3.4.4)
+  - Downloading laravel/roster (v1.0.0)
+  - Downloading laravel/mcp (v0.9.4)
+  - Downloading laravel/boost (v2.7.0)
+  - Downloading laravel/breeze (v2.4.2)
+  - Downloading laravel/pint (v1.30.5)
+  - Downloading react/event-loop (v1.6.0)
+  - Downloading evenement/evenement (v3.0.2)
+  - Downloading react/stream (v1.4.0)
+  - Downloading react/promise (v3.3.0)
+  - Downloading react/cache (v1.2.0)
+  - Downloading react/dns (v1.14.0)
+  - Downloading react/socket (v1.17.0)
+  - Downloading react/promise-timer (v1.11.0)
+  - Downloading ratchet/rfc6455 (v0.4.1)
+  - Downloading pusher/pusher-php-server (7.3.0)
+  - Downloading clue/redis-react (v2.8.0)
+  - Downloading laravel/reverb (v1.11.1)
+  - Downloading laravel/sanctum (v4.3.3)
+  - Downloading laravel/scout (v11.6.1)
+  - Downloading nikic/php-parser (v5.8.0)
+  - Downloading psy/psysh (v0.12.24)
+  - Downloading laravel/tinker (v2.11.1)
+  - Downloading hamcrest/hamcrest-php (v3.0.0)
+  - Downloading mockery/mockery (1.6.15)
+  - Downloading filp/whoops (2.18.4)
+  - Downloading nunomaduro/collision (v8.9.5)
+  - Downloading staabm/side-effects-detector (1.0.5)
+  - Downloading sebastian/version (6.0.0)
+  - Downloading sebastian/type (6.0.4)
+  - Downloading sebastian/recursion-context (7.0.1)
+  - Downloading sebastian/object-reflector (5.0.0)
+  - Downloading sebastian/object-enumerator (7.0.0)
+  - Downloading sebastian/global-state (8.0.3)
+  - Downloading sebastian/exporter (7.0.3)
+  - Downloading sebastian/environment (8.1.2)
+  - Downloading sebastian/diff (7.0.1)
+  - Downloading sebastian/comparator (7.1.8)
+  - Downloading sebastian/cli-parser (4.2.1)
+  - Downloading phpunit/php-timer (8.0.0)
+  - Downloading phpunit/php-text-template (5.0.0)
+  - Downloading phpunit/php-invoker (6.0.0)
+  - Downloading phpunit/php-file-iterator (6.0.2)
+  - Downloading theseer/tokenizer (2.0.1)
+  - Downloading sebastian/lines-of-code (4.0.1)
+  - Downloading sebastian/complexity (5.0.0)
+  - Downloading phpunit/php-code-coverage (12.5.7)
+  - Downloading phar-io/version (3.2.1)
+  - Downloading phar-io/manifest (2.0.4)
+  - Downloading myclabs/deep-copy (1.14.0)
+  - Downloading phpunit/phpunit (12.5.34)
+  - Downloading bacon/bacon-qr-code (2.0.8)
+  - Downloading simplesoftwareio/simple-qrcode (4.2.0)
+  - Downloading spatie/error-solutions (1.1.3)
+  - Downloading spatie/backtrace (1.8.2)
+  - Downloading spatie/flare-client-php (1.11.1)
+  - Downloading spatie/image-optimizer (1.10.0)
+  - Downloading spatie/ignition (1.16.0)
+  - Downloading spatie/laravel-ignition (2.12.0)
+  - Downloading spatie/temporary-directory (2.4.0)
+  - Downloading spatie/laravel-package-tools (1.93.2)
+  - Downloading spatie/image (3.9.6)
+  - Downloading maennchen/zipstream-php (3.2.2)
+  - Downloading spatie/laravel-medialibrary (11.23.5)
+  - Downloading spatie/laravel-permission (6.25.0)
+  - Downloading masterminds/html5 (2.11.0)
+  - Downloading symfony/dom-crawler (v7.4.17)
+  - Downloading symfony/browser-kit (v7.4.17)
+  - Downloading symfony/http-client-contracts (v3.7.1)
+  - Downloading symfony/http-client (v7.4.17)
+  - Installing carbonphp/carbon-doctrine-types (3.2.0): Extracting archive
+  - Installing clue/redis-protocol (v0.3.2): Extracting archive
+  - Installing dasprid/enum (1.0.7): Extracting archive
+  - Installing doctrine/inflector (2.1.0): Extracting archive
+  - Installing doctrine/lexer (3.0.1): Extracting archive
+  - Installing dragonmantank/cron-expression (v3.6.0): Extracting archive
+  - Installing symfony/deprecation-contracts (v3.7.1): Extracting archive
+  - Installing psr/container (2.0.2): Extracting archive
+  - Installing fakerphp/faker (v1.24.1): Extracting archive
+  - Installing firebase/php-jwt (v6.11.1): Extracting archive
+  - Installing symfony/polyfill-mbstring (v1.38.2): Extracting archive
+  - Installing symfony/http-foundation (v7.4.17): Extracting archive
+  - Installing fruitcake/php-cors (v1.4.0): Extracting archive
+  - Installing symfony/polyfill-php80 (v1.37.0): Extracting archive
+  - Installing guzzlehttp/uri-template (v1.0.11): Extracting archive
+  - Installing intervention/gif (4.2.4): Extracting archive
+  - Installing intervention/image (3.11.8): Extracting archive
+  - Installing symfony/polyfill-ctype (v1.37.0): Extracting archive
+  - Installing symfony/yaml (v7.4.17): Extracting archive
+  - Installing voku/portable-ascii (2.1.1): Extracting archive
+  - Installing phpoption/phpoption (1.10.0): Extracting archive
+  - Installing graham-campbell/result-type (v1.2.0): Extracting archive
+  - Installing vlucas/phpdotenv (v5.7.0): Extracting archive
+  - Installing symfony/css-selector (v7.4.17): Extracting archive
+  - Installing tijsverkoyen/css-to-inline-styles (v2.4.0): Extracting archive
+  - Installing symfony/var-dumper (v7.4.17): Extracting archive
+  - Installing symfony/polyfill-uuid (v1.37.0): Extracting archive
+  - Installing symfony/uid (v7.4.17): Extracting archive
+  - Installing symfony/routing (v7.4.17): Extracting archive
+  - Installing symfony/process (v7.4.17): Extracting archive
+  - Installing symfony/polyfill-php85 (v1.41.0): Extracting archive
+  - Installing symfony/polyfill-php84 (v1.38.1): Extracting archive
+  - Installing symfony/polyfill-php83 (v1.41.0): Extracting archive
+  - Installing symfony/polyfill-intl-normalizer (v1.42.0): Extracting archive
+  - Installing symfony/polyfill-intl-idn (v1.42.0): Extracting archive
+  - Installing symfony/mime (v7.4.17): Extracting archive
+  - Installing symfony/service-contracts (v3.7.1): Extracting archive
+  - Installing psr/event-dispatcher (1.0.0): Extracting archive
+  - Installing symfony/event-dispatcher-contracts (v3.7.1): Extracting archive
+  - Installing symfony/event-dispatcher (v7.4.17): Extracting archive
+  - Installing psr/log (3.0.2): Extracting archive
+  - Installing egulias/email-validator (4.0.4): Extracting archive
+  - Installing symfony/mailer (v7.4.17): Extracting archive
+  - Installing symfony/error-handler (v7.4.17): Extracting archive
+  - Installing symfony/http-kernel (v7.4.17): Extracting archive
+  - Installing symfony/finder (v7.4.17): Extracting archive
+  - Installing symfony/polyfill-intl-grapheme (v1.41.0): Extracting archive
+  - Installing symfony/string (v7.4.15): Extracting archive
+  - Installing symfony/console (v7.4.17): Extracting archive
+  - Installing ramsey/collection (2.1.1): Extracting archive
+  - Installing brick/math (0.14.8): Extracting archive
+  - Installing ramsey/uuid (4.9.3): Extracting archive
+  - Installing psr/simple-cache (3.0.0): Extracting archive
+  - Installing nunomaduro/termwind (v2.4.0): Extracting archive
+  - Installing symfony/translation-contracts (v3.7.1): Extracting archive
+  - Installing symfony/translation (v7.4.17): Extracting archive
+  - Installing psr/clock (1.0.0): Extracting archive
+  - Installing symfony/clock (v7.4.8): Extracting archive
+  - Installing nesbot/carbon (3.13.2): Extracting archive
+  - Installing monolog/monolog (3.10.0): Extracting archive
+  - Installing psr/http-message (2.0): Extracting archive
+  - Installing psr/http-factory (1.1.0): Extracting archive
+  - Installing league/uri-interfaces (7.8.1): Extracting archive
+  - Installing league/uri (7.8.1): Extracting archive
+  - Installing league/mime-type-detection (1.17.0): Extracting archive
+  - Installing league/flysystem-local (3.35.3): Extracting archive
+  - Installing league/flysystem (3.35.3): Extracting archive
+  - Installing nette/utils (v4.1.5): Extracting archive
+  - Installing nette/schema (v1.3.6): Extracting archive
+  - Installing dflydev/dot-access-data (v3.0.3): Extracting archive
+  - Installing league/config (v1.2.0): Extracting archive
+  - Installing league/commonmark (2.10.0): Extracting archive
+  - Installing laravel/serializable-closure (v2.0.16): Extracting archive
+  - Installing laravel/prompts (v0.3.24): Extracting archive
+  - Installing psr/http-client (1.0.3): Extracting archive
+  - Installing ralouphie/getallheaders (3.0.3): Extracting archive
+  - Installing guzzlehttp/psr7 (2.13.1): Extracting archive
+  - Installing guzzlehttp/promises (2.5.3): Extracting archive
+  - Installing guzzlehttp/guzzle (7.15.5): Extracting archive
+  - Installing laravel/framework (v12.68.0): Extracting archive
+  - Installing composer/semver (3.4.4): Extracting archive
+  - Installing laravel/roster (v1.0.0): Extracting archive
+  - Installing laravel/mcp (v0.9.4): Extracting archive
+  - Installing laravel/boost (v2.7.0): Extracting archive
+  - Installing laravel/breeze (v2.4.2): Extracting archive
+  - Installing laravel/pint (v1.30.5): Extracting archive
+  - Installing react/event-loop (v1.6.0): Extracting archive
+  - Installing evenement/evenement (v3.0.2): Extracting archive
+  - Installing react/stream (v1.4.0): Extracting archive
+  - Installing react/promise (v3.3.0): Extracting archive
+  - Installing react/cache (v1.2.0): Extracting archive
+  - Installing react/dns (v1.14.0): Extracting archive
+  - Installing react/socket (v1.17.0): Extracting archive
+  - Installing react/promise-timer (v1.11.0): Extracting archive
+  - Installing ratchet/rfc6455 (v0.4.1): Extracting archive
+  - Installing pusher/pusher-php-server (7.3.0): Extracting archive
+  - Installing clue/redis-react (v2.8.0): Extracting archive
+  - Installing laravel/reverb (v1.11.1): Extracting archive
+  - Installing laravel/sanctum (v4.3.3): Extracting archive
+  - Installing laravel/scout (v11.6.1): Extracting archive
+  - Installing nikic/php-parser (v5.8.0): Extracting archive
+  - Installing psy/psysh (v0.12.24): Extracting archive
+  - Installing laravel/tinker (v2.11.1): Extracting archive
+  - Installing hamcrest/hamcrest-php (v3.0.0): Extracting archive
+  - Installing mockery/mockery (1.6.15): Extracting archive
+  - Installing filp/whoops (2.18.4): Extracting archive
+  - Installing nunomaduro/collision (v8.9.5): Extracting archive
+  - Installing staabm/side-effects-detector (1.0.5): Extracting archive
+  - Installing sebastian/version (6.0.0): Extracting archive
+  - Installing sebastian/type (6.0.4): Extracting archive
+  - Installing sebastian/recursion-context (7.0.1): Extracting archive
+  - Installing sebastian/object-reflector (5.0.0): Extracting archive
+  - Installing sebastian/object-enumerator (7.0.0): Extracting archive
+  - Installing sebastian/global-state (8.0.3): Extracting archive
+  - Installing sebastian/exporter (7.0.3): Extracting archive
+  - Installing sebastian/environment (8.1.2): Extracting archive
+  - Installing sebastian/diff (7.0.1): Extracting archive
+  - Installing sebastian/comparator (7.1.8): Extracting archive
+  - Installing sebastian/cli-parser (4.2.1): Extracting archive
+  - Installing phpunit/php-timer (8.0.0): Extracting archive
+  - Installing phpunit/php-text-template (5.0.0): Extracting archive
+  - Installing phpunit/php-invoker (6.0.0): Extracting archive
+  - Installing phpunit/php-file-iterator (6.0.2): Extracting archive
+  - Installing theseer/tokenizer (2.0.1): Extracting archive
+  - Installing sebastian/lines-of-code (4.0.1): Extracting archive
+  - Installing sebastian/complexity (5.0.0): Extracting archive
+  - Installing phpunit/php-code-coverage (12.5.7): Extracting archive
+  - Installing phar-io/version (3.2.1): Extracting archive
+  - Installing phar-io/manifest (2.0.4): Extracting archive
+  - Installing myclabs/deep-copy (1.14.0): Extracting archive
+  - Installing phpunit/phpunit (12.5.34): Extracting archive
+  - Installing bacon/bacon-qr-code (2.0.8): Extracting archive
+  - Installing simplesoftwareio/simple-qrcode (4.2.0): Extracting archive
+  - Installing spatie/error-solutions (1.1.3): Extracting archive
+  - Installing spatie/backtrace (1.8.2): Extracting archive
+  - Installing spatie/flare-client-php (1.11.1): Extracting archive
+  - Installing spatie/image-optimizer (1.10.0): Extracting archive
+  - Installing spatie/ignition (1.16.0): Extracting archive
+  - Installing spatie/laravel-ignition (2.12.0): Extracting archive
+  - Installing spatie/temporary-directory (2.4.0): Extracting archive
+  - Installing spatie/laravel-package-tools (1.93.2): Extracting archive
+  - Installing spatie/image (3.9.6): Extracting archive
+  - Installing maennchen/zipstream-php (3.2.2): Extracting archive
+  - Installing spatie/laravel-medialibrary (11.23.5): Extracting archive
+  - Installing spatie/laravel-permission (6.25.0): Extracting archive
+  - Installing masterminds/html5 (2.11.0): Extracting archive
+  - Installing symfony/dom-crawler (v7.4.17): Extracting archive
+  - Installing symfony/browser-kit (v7.4.17): Extracting archive
+  - Installing symfony/http-client-contracts (v3.7.1): Extracting archive
+  - Installing symfony/http-client (v7.4.17): Extracting archive
+72 package suggestions were added by new dependencies, use `composer suggest` to see details.
+Generating optimized autoload files
+> Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> @php artisan package:discover --ansi
+
+   Illuminate\Contracts\Container\BindingResolutionException 
+
+  Target class [files] does not exist.
+
+  at vendor\laravel\framework\src\Illuminate\Container\Container.php:1124
+    1120‘ыт 
+    1121‘ыт         try {
+    1122‘ыт             $reflector = new ReflectionClass($concrete);
+    1123‘ыт         } catch (ReflectionException $e) {
+  ‘„£ 1124‘ыт             throw new BindingResolutionException("Target class [$concrete] does not exist.", 0, $e);
+    1125‘ыт         }
+    1126‘ыт 
+    1127‘ыт         // If the type is not instantiable, the developer is attempting to resolve
+    1128‘ыт         // an abstract type such as an Interface or Abstract Class and there is
+
+  1   [internal]:0
+      Illuminate\Foundation\Application::Illuminate\Foundation\{closure}(Object(Laravel\Sanctum\SanctumServiceProvider), "Laravel\Sanctum\SanctumServiceProvider")
+
+  2   vendor\laravel\framework\src\Illuminate\Container\Container.php:1122
+      ReflectionException::("Class "files" does not exist")
+
+Script @php artisan package:discover --ansi handling the post-autoload-dump event returned with error code 1

@@ -1,0 +1,26 @@
+.tvos-regard { position:relative; display:block; width:100%; aspect-ratio:1; min-width:0; min-height:0; overflow:hidden; border-radius:50%; background:#020510; color-scheme:dark; isolation:isolate; }
+.tvos-regard-stage { position:absolute; inset:0; display:grid; place-items:center; }
+.tvos-regard-eye { position:relative; width:100%; aspect-ratio:1; --ix:0; --iy:0; animation:tvos-regard-breathe 7s ease-in-out infinite; }
+.tvos-regard-layer { position:absolute; inset:0; background:url('/images/regard-eye-741555bffeba.jpg') center / 100% 100% no-repeat; }
+.tvos-regard-iris { transform-origin:49.8% 45.8%; -webkit-mask-image:radial-gradient(circle at 49.8% 45.8%,#000 31%,transparent 37%); mask-image:radial-gradient(circle at 49.8% 45.8%,#000 31%,transparent 37%); animation:tvos-regard-spin 60s linear infinite; }
+.tvos-regard-iris-wrap { position:absolute; inset:0; transform:translate(calc(var(--ix) * 1.6%),calc(var(--iy) * 1.6%)); transition:transform .25s ease-out; }
+.tvos-regard-pupil { position:absolute; left:49.8%; top:45.8%; width:23.6%; aspect-ratio:1; margin:-11.8% 0 0 -11.8%; border-radius:50%; background:radial-gradient(circle,#000 72%,transparent 100%); animation:tvos-regard-dilate 5.5s ease-in-out infinite; }
+.tvos-regard-glow { position:absolute; inset:0; mix-blend-mode:screen; pointer-events:none; background:radial-gradient(circle at 49.8% 45.8%,transparent 20%,rgb(60 170 255 / .28) 38%,transparent 48%); animation:tvos-regard-pulse 5.5s ease-in-out infinite; }
+.tvos-regard-hud { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; mix-blend-mode:screen; }
+.tvos-regard-hud g { transform-origin:600px 600px; }
+.tvos-regard-ring-one { animation:tvos-regard-spin 40s linear infinite; }
+.tvos-regard-ring-two { animation:tvos-regard-spin 28s linear infinite reverse; }
+.tvos-regard-ring-three { animation:tvos-regard-spin 90s linear infinite; }
+.tvos-regard-scan { position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; background:linear-gradient(180deg,transparent,rgb(90 190 255 / .22),transparent) 0 -20% / 100% 14% no-repeat; -webkit-mask-image:radial-gradient(circle,#000 38%,transparent 40%); mask-image:radial-gradient(circle,#000 38%,transparent 40%); animation:tvos-regard-scan 6s ease-in-out infinite; }
+.tvos-regard-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.tvos-regard.is-speaking .tvos-regard-glow { animation:tvos-regard-voice 1.2s ease-in-out infinite; }
+.tvos-regard[data-regard-paused] * { animation-play-state:paused!important; }
+.tvos-regard.tvos-regard--compact { width:130px; height:130px; flex:none; }
+html.ui-compact .tvos-regard.ui-sidebar-oeil { width:96px; height:96px; max-height:96px; }
+@keyframes tvos-regard-spin { to { transform:rotate(360deg); } }
+@keyframes tvos-regard-dilate { 0%,100% { transform:scale(1); } 45%,60% { transform:scale(1.14); } }
+@keyframes tvos-regard-pulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+@keyframes tvos-regard-breathe { 0%,100% { filter:brightness(.95) saturate(1); } 50% { filter:brightness(1.12) saturate(1.2); } }
+@keyframes tvos-regard-scan { 0% { background-position:0 -20%; opacity:0; } 15%,85% { opacity:1; } 100% { background-position:0 120%; opacity:0; } }
+@keyframes tvos-regard-voice { 0%,100% { opacity:.5; transform:scale(.98); } 40% { opacity:1; transform:scale(1.06); } 70% { opacity:.7; transform:scale(1.02); } }
+@media(prefers-reduced-motion:reduce) { .tvos-regard *, .tvos-regard.is-speaking * { animation:none!important; transition:none!important; } }

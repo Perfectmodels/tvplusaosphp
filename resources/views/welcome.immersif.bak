@@ -1,0 +1,106 @@
+@extends('layouts.guest')
+@section('title', 'TV+A OS — Production éditoriale')
+
+@php
+    $destination = auth()->check() ? route('dashboard') : route('login');
+    $modules = [
+        ['titre' => 'Conducteurs de rédaction', 'icone' => 'edit_document', 'texte' => 'Préparez les sujets par date d’édition et suivez leur avancement, du terrain à la diffusion.', 'route' => 'conducteurs.redaction.index', 'modele' => \App\Models\Conducteur::class],
+        ['titre' => 'Conducteurs d’émission', 'icone' => 'description', 'texte' => 'Organisez les séquences, les durées et la présentation de chaque édition.', 'route' => 'conducteurs.emission.index', 'modele' => \App\Models\Conducteur::class],
+        ['titre' => 'Émissions', 'icone' => 'live_tv', 'texte' => 'Retrouvez les programmes, leurs horaires et les équipes de présentation affectées.', 'route' => 'emissions.index', 'modele' => \App\Models\Emission::class],
+        ['titre' => 'Intervenants', 'icone' => 'groups', 'texte' => 'Gérez les fiches des invités, leurs invitations et leur parcours jusqu’au plateau.', 'route' => 'intervenants.index', 'modele' => \App\Models\Intervenant::class],
+        ['titre' => 'Veille éditoriale', 'icone' => 'travel_explore', 'texte' => 'Consultez les articles collectés depuis vos sources et préparez les sujets de la rédaction.', 'route' => 'veille.sujets.index', 'modele' => \App\Models\VeilleSubject::class],
+        ['titre' => 'Journalistes', 'icone' => 'person_search', 'texte' => 'Retrouvez l’équipe, les spécialités et les sujets attribués à chaque journaliste.', 'route' => 'journalistes.index', 'modele' => \App\Models\Journaliste::class],
+    ];
+@endphp
+
+@section('content')
+<div class="tvos-landing">
+    <header class="tvos-nav">
+        <nav class="tvos-container tvos-nav-inner" aria-label="Navigation principale">
+            <a href="{{ url('/') }}" class="tvos-brand" aria-label="TV+OS · accueil">
+                <span class="material-symbols-outlined tvos-brand-icon" aria-hidden="true">visibility</span>
+                <span>TV<span class="tvos-brand-plus">+</span>OS<small>TV AFRIQUE</small></span>
+            </a>
+            <div class="tvos-nav-links">
+                <a href="#ecosysteme">L’écosystème</a>
+                <a href="#modules">Les outils</a>
+            </div>
+            <a href="{{ $destination }}" class="tvos-nav-access">
+                {{ auth()->check() ? 'Mon espace' : 'Connexion' }}
+                <span class="material-symbols-outlined" aria-hidden="true">north_east</span>
+            </a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="tvos-hero tvos-container" aria-labelledby="accueil-titre">
+            <div class="tvos-hero-art" aria-hidden="true">
+                <img src="{{ asset('images/tvos-digital-eye.webp') }}" alt="" width="1536" height="1024" fetchpriority="high">
+            </div>
+            <div class="tvos-hero-copy">
+                <p class="tvos-eyebrow"><span></span>L’univers digital de TV Afrique</p>
+                <h1 id="accueil-titre">La production.<br><span>Une autre<br class="tvos-desktop-break"> dimension.</span></h1>
+                <p class="tvos-hero-description">De la première information au dernier signal. Connectez les idées, les équipes et l’antenne dans un même espace de production.</p>
+                <div class="tvos-hero-actions">
+                    <a href="{{ $destination }}" class="tvos-button tvos-button-primary">
+                        Accéder à mon espace
+                        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                    </a>
+                    <a href="#modules" class="tvos-button tvos-button-secondary">Explorer les outils<span class="material-symbols-outlined" aria-hidden="true">south</span></a>
+                </div>
+                <p class="tvos-hero-note">Rédaction · Régie · Production</p>
+            </div>
+            <a href="#ecosysteme" class="tvos-discover" aria-label="Découvrir l’écosystème TV+OS"><span>Découvrir l’écosystème</span><span class="material-symbols-outlined" aria-hidden="true">south</span></a>
+        </section>
+
+        <section id="ecosysteme" class="tvos-ecosystem" aria-labelledby="ecosysteme-titre">
+            <div class="tvos-container tvos-ecosystem-grid" data-reveal>
+                <div>
+                    <p class="tvos-eyebrow">La technologie au service de l’antenne</p>
+                    <h2 id="ecosysteme-titre">Toute l’équipe.<br><span>Une même vision.</span></h2>
+                </div>
+                <div class="tvos-ecosystem-copy">
+                    <p>Un sujet devient un reportage. Une séquence trouve sa place dans le conducteur. Un invité rejoint le plateau. TV+OS relie ces étapes pour accompagner le travail de votre équipe.</p>
+                    <div class="tvos-workflow" aria-label="Étapes de production">
+                        @foreach(['Terrain', 'Montage', 'Habillage', 'Livraison', 'Diffusion'] as $etape)
+                            <span>{{ $etape }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="modules" class="tvos-modules tvos-container" aria-labelledby="modules-titre">
+            <div class="tvos-section-heading" data-reveal>
+                <div><p class="tvos-eyebrow">Un environnement, vos métiers</p><h2 id="modules-titre">Entrez dans<br><span>votre espace de production.</span></h2></div>
+                <p>Les outils de la rédaction et de la régie, accessibles selon votre rôle. Vos indicateurs et vos données restent dans votre espace après connexion.</p>
+            </div>
+            <div class="tvos-module-grid">
+                @foreach($modules as $module)
+                    <article class="tvos-module" data-reveal>
+                        <span class="material-symbols-outlined tvos-module-icon" aria-hidden="true">{{ $module['icone'] }}</span>
+                        <h3>{{ $module['titre'] }}</h3>
+                        <p>{{ $module['texte'] }}</p>
+                        @if(auth()->check() && auth()->user()->can('viewAny', $module['modele']))
+                            <a href="{{ route($module['route']) }}">Ouvrir<span class="sr-only"> {{ $module['titre'] }}</span><span class="material-symbols-outlined" aria-hidden="true">north_east</span></a>
+                        @elseif(auth()->guest())
+                            <a href="{{ route('login') }}">Accéder à l’outil<span class="sr-only"> {{ $module['titre'] }}</span><span class="material-symbols-outlined" aria-hidden="true">north_east</span></a>
+                        @else
+                            <span class="tvos-module-access">Accès selon vos droits</span>
+                        @endif
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="tvos-final tvos-container" aria-labelledby="espace-titre" data-reveal>
+            <div><p class="tvos-eyebrow">TV+OS · TV Afrique</p><h2 id="espace-titre">L’information avance.<br><span>Votre équipe aussi.</span></h2></div>
+            <a href="{{ $destination }}" class="tvos-button tvos-button-primary">Entrer dans TV+OS<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
+        </section>
+    </main>
+
+    <footer class="tvos-footer">
+        <div class="tvos-container tvos-footer-inner"><span>© {{ now()->year }} TV Afrique · TV+OS</span><span>Informer. Coordonner. Inspirer.</span><a href="{{ $destination }}">{{ auth()->check() ? 'Mon espace' : 'Connexion' }}</a></div>
+    </footer>
+</div>
+@endsection

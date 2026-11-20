@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <atom:link href="https://exemple.test/rss/actualites" rel="self" type="application/rss+xml" />
+        <title>L'actualité économique de l'Afrique</title>
+        <link>https://exemple.test/</link>
+        <description>Flux de test</description>
+        <item>
+            <title>R&amp;D : la fintech MOLO&nbsp;PAY s'agrandit</title>
+            <pubDate>Thu, 22 Oct 2026 13:06:35 GMT</pubDate>
+            <link>https://exemple.test/marches/molo-pay_65189</link>
+            <description>La fintech africaine &nbsp;poursuit ses ambitions d'expansion &amp; de croissance en Afrique.</description>
+            <content:encoded><![CDATA[<p>La fintech <b>MOLO PAY</b> poursuit ses ambitions.</p>]]></content:encoded>
+            <media:thumbnail url="https://exemple.test/img/65189.jpg" />
+        </item>
+        <item>
+            <title>Recherche & Développement : un nouveau fonds</title>
+            <pubDate>Wed, 21 Oct 2026 10:00:00 GMT</pubDate>
+            <link>https://exemple.test/marches/nouveau-fonds_65186</link>
+            <description>Résumé du deuxième article, avec un & commercial nu.</description>
+        </item>
+    </channel>
+</rss>

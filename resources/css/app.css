@@ -1,0 +1,445 @@
+@import './dashboard.css';
+@import './assistant.css';
+@import './mobile.css';
+@import './landing.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.bulk-selection-bar:has([data-bulk-item]:checked),
+.bulk-selection-bar:has([data-bulk-all]:checked) {
+    border-color: #0054cd;
+}
+
+form [aria-invalid='true'] {
+    border-color: #ba1a1a;
+    outline-color: #ba1a1a;
+}
+
+@layer base {
+    body {
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    input:not([type='checkbox']):not([type='radio']), select, textarea {
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+}
+
+@media (min-width: 1280px) {
+    .ui-topbar-heading {
+        flex-basis: 340px;
+    }
+
+    .ui-topbar-search {
+        flex-basis: 220px;
+    }
+}
+
+@media (min-width: 640px) and (max-width: 1279px) {
+    .ui-topbar-heading {
+        flex-basis: 100%;
+    }
+
+    .ui-topbar-search {
+        padding-left: 0;
+        min-width: 160px;
+    }
+}
+
+@layer components {
+    .shadow-ambient {
+        box-shadow: 0px 10px 30px 0px rgba(0, 26, 65, 0.04) !important;
+    }
+    .card-shadow {
+        box-shadow: 0px 10px 30px rgba(0, 26, 65, 0.04);
+    }
+    .custom-shadow {
+        box-shadow: 0px 2px 6px 2px rgba(0, 26, 65, 0.04), 0px 1px 2px 0px rgba(0, 26, 65, 0.06);
+    }
+    .tab-btn {
+        @apply px-5 py-3.5 font-bold text-[13px] text-on-surface-variant border-b-2 border-transparent transition-all uppercase tracking-wide inline-flex items-center gap-2 cursor-pointer;
+    }
+    .tab-btn:hover {
+        @apply text-primary;
+    }
+    .tab-btn.active {
+        @apply text-primary border-primary;
+    }
+    .form-label {
+        @apply block text-xs uppercase font-semibold tracking-wider text-on-surface-variant mb-1.5;
+    }
+    .form-label .req {
+        @apply text-error ml-0.5;
+    }
+    .form-input {
+        @apply w-full px-3.5 py-2.5 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary text-on-surface;
+    }
+    textarea.form-input {
+        @apply resize-y min-h-[100px];
+    }
+    .card-surface {
+        @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+    }
+    .card-emission-band {
+        @apply h-2 w-full;
+    }
+    .input-field {
+        @apply w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder-slate-400;
+    }
+    .btn-primary {
+        @apply px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2;
+    }
+    .btn-primary:hover { background-color:#0d3264; transition:all .15s ease; }
+    .btn-outline {
+        @apply px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium inline-flex items-center justify-center gap-2;
+    }
+    .btn-outline:hover { background:#f8fafc; transition:all .15s ease; }
+    .btn-ghost {
+        @apply px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium inline-flex items-center justify-center gap-2;
+    }
+    .btn-ghost:hover { background:#f8fafc; transition:all .15s ease; }
+    .btn-success {
+        @apply px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2;
+    }
+    .btn-success:hover { background-color:#047857; transition:all .15s ease; }
+    .badge-blue { background:#e0eaff; color:#001a41; }
+    .badge-green { background:#e7f9ef; color:#0a6b3c; }
+    .badge-orange { background:#fff2df; color:#8a4d00; }
+    .badge-red { background:#ffdad6; color:#ba1a1a; }
+    .badge-purple { background:#ede9fe; color:#5b21b6; }
+    .badge-indigo { background:#e0e7ff; color:#3730a3; }
+    .badge-gray { background:#f1f5f9; color:#475569; }
+    .table-header { background:#f3f4f7; color:#444a54; font-weight:600; text-transform:uppercase; font-size:0.875rem; letter-spacing:0.04em; }
+}
+
+@layer utilities {
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .section-title {
+        @apply text-xs uppercase font-bold tracking-widest text-primary dark:text-primary-fixed pb-2 border-b border-primary-container/30 mb-6;
+    }
+    .info-label {
+        @apply text-xs uppercase font-semibold tracking-wider text-on-surface-variant mb-1;
+    }
+    .info-value {
+        @apply font-body-md text-on-surface;
+    }
+    .stat-kpi-number {
+        @apply text-4xl font-black text-primary dark:text-primary-fixed tracking-tighter leading-none;
+    }
+    .stat-kpi-label {
+        @apply text-xs uppercase font-bold tracking-widest text-on-surface-variant mt-3;
+    }
+
+    .font-headline-xl, .text-headline-xl {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 32px;
+        line-height: 40px;
+        letter-spacing: -0.02em;
+        font-weight: 700;
+    }
+    .font-headline-lg, .text-headline-lg {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 24px;
+        line-height: 32px;
+        letter-spacing: -0.01em;
+        font-weight: 700;
+    }
+    .font-headline-md, .text-headline-md {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 18px;
+        line-height: 26px;
+        letter-spacing: 0em;
+        font-weight: 700;
+    }
+    .font-headline-sm, .text-headline-sm {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 20px;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+    }
+    .font-label-sm, .text-label-sm {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: 500;
+    }
+    .font-label-md, .text-label-md {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 22px;
+        font-weight: 600;
+    }
+    .font-body-sm, .text-body-sm {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        line-height: 22px;
+        font-weight: 400;
+    }
+    .font-body-md, .text-body-md {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 400;
+    }
+}
+
+/* Alpine : un élément marqué `x-cloak` reste caché jusqu'à l'initialisation
+   d'Alpine, ce qui évite un flash des blocs conditionnels (chrono antenne,
+   boutons de pilotage, modales…). */
+[x-cloak] {
+    display: none !important;
+}
+
+/* =====================================================================
+   AUTHENTIFICATION — identité « TV+ Afrique » (fond bleu doux + carte
+   en verre dépoli + œil redessiné en CSS). Aucune image externe.
+   ===================================================================== */
+@layer components {
+    :root {
+        --tv-navy: #0b1b4d;
+        --tv-navy-deep: #081340;
+        --tv-blue: #1f6fd1;
+        --tv-muted: #7f93b2;
+        --tv-line: #dbe5f3;
+    }
+
+    .tv-auth-bg {
+        min-height: 100vh;
+        color: var(--tv-navy);
+        background:
+            radial-gradient(circle at 12% 18%, #ffffff 0, transparent 22%),
+            radial-gradient(circle at 85% 90%, #ffffff 0, transparent 18%),
+            radial-gradient(circle at 70% 10%, #a9c6f2 0, transparent 35%),
+            linear-gradient(135deg, #dce9fb 0%, #b9d3f5 50%, #cfe1f9 100%);
+        background-attachment: fixed;
+    }
+
+    /* ---- Colonne de marque ---- */
+    .tv-brand-logo {
+        font-weight: 800;
+        font-size: 2.6rem;
+        letter-spacing: -.02em;
+        line-height: 1;
+        color: var(--tv-navy-deep);
+    }
+    .tv-brand-logo .tv-plus {
+        color: var(--tv-blue);
+    }
+    .tv-brand-sub {
+        font-size: 0.875rem;
+        letter-spacing: .28em;
+        color: var(--tv-navy);
+        margin-top: .35rem;
+    }
+
+    .tv-eye-wrap {
+        position: relative;
+        width: min(340px, 70vw);
+        aspect-ratio: 1;
+        margin: 0 auto;
+    }
+    .tv-eye {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background:
+            radial-gradient(circle at 50% 50%, #5d8fd6 0 12%, #8bb0e3 13% 24%, transparent 25%),
+            repeating-conic-gradient(from 0deg, #d8c6b0 0 4deg, #b9ccea 4deg 8deg);
+        filter: blur(5px);
+        opacity: .85;
+        -webkit-mask-image: radial-gradient(circle, #000 55%, transparent 72%);
+        mask-image: radial-gradient(circle, #000 55%, transparent 72%);
+    }
+    .tv-constellation {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+    .tv-constellation line {
+        stroke: #fff;
+        stroke-width: 1;
+        opacity: .85;
+    }
+    .tv-constellation circle {
+        fill: #fff;
+        filter: drop-shadow(0 0 5px #4f8dff);
+    }
+
+    .tv-tagline {
+        font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+        font-weight: 500;
+        color: var(--tv-navy);
+        letter-spacing: -.01em;
+    }
+    .tv-tagline-sub {
+        font-size: 0.875rem;
+        letter-spacing: .3em;
+        color: var(--tv-muted);
+    }
+
+    /* ---- Carte en verre dépoli ---- */
+    .tv-card {
+        background: rgba(255, 255, 255, .45);
+        border: 1px solid rgba(255, 255, 255, .8);
+        border-radius: 28px;
+        box-shadow: 0 20px 60px rgba(60, 110, 190, .18);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        padding: 2.4rem 2.5rem;
+        max-width: 460px;
+        width: 100%;
+    }
+    @media (max-width: 991.98px) {
+        .tv-card {
+            padding: 1.8rem 1.4rem;
+        }
+    }
+
+    .tv-eyebrow {
+        font-size: 0.875rem;
+        letter-spacing: .22em;
+        color: var(--tv-muted);
+    }
+    .tv-card h1 {
+        font-weight: 800;
+        font-size: 2.6rem;
+        letter-spacing: -.03em;
+        color: var(--tv-navy-deep);
+        line-height: 1.1;
+    }
+    .tv-lead {
+        color: var(--tv-muted);
+        font-size: .92rem;
+    }
+
+    /* ---- Champs ---- */
+    .tv-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--tv-navy);
+        margin-bottom: .45rem;
+        display: block;
+    }
+    .tv-field {
+        display: flex;
+        align-items: stretch;
+        border: 1px solid var(--tv-line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, .55);
+        height: 48px;
+    }
+    .tv-field:focus-within {
+        background: #fff;
+        border-color: var(--tv-blue);
+    }
+    .tv-field-icon {
+        display: flex;
+        align-items: center;
+        padding: 0 .85rem;
+        color: var(--tv-muted);
+    }
+    .tv-field input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        outline: none;
+        font-size: 1rem; /* 16px minimum : évite le zoom automatique iOS au focus */
+        color: var(--tv-navy);
+    }
+    .tv-field input::placeholder {
+        color: #a9b8d0;
+    }
+    .tv-field-btn {
+        border: 0;
+        border-left: 1px solid var(--tv-line);
+        background: transparent;
+        padding: 0 .85rem;
+        color: var(--tv-muted);
+        cursor: pointer;
+    }
+    .tv-field-btn:hover {
+        color: var(--tv-navy);
+    }
+
+    .tv-check {
+        width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 4px;
+        border: 1px solid #aebfd8;
+        accent-color: var(--tv-navy);
+    }
+    .tv-link {
+        color: var(--tv-blue);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .tv-link:hover {
+        text-decoration: underline;
+    }
+
+    /* ---- Boutons ---- */
+    .tv-btn-primary {
+        height: 48px;
+        width: 100%;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #14296b, var(--tv-navy-deep));
+        color: #fff;
+        font-weight: 600;
+        box-shadow: 0 8px 20px rgba(11, 27, 77, .3);
+        cursor: pointer;
+    }
+    .tv-btn-primary:hover {
+        background: linear-gradient(180deg, #1a3380, #0b1b4d);
+        color: #fff;
+    }
+
+    .tv-divider {
+        display: flex;
+        align-items: center;
+        gap: .8rem;
+        color: var(--tv-muted);
+        font-size: 0.875rem;
+    }
+    .tv-divider::before,
+    .tv-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--tv-line);
+    }
+
+    .tv-help {
+        font-size: 0.875rem;
+        color: var(--tv-muted);
+    }
+
+    /* ---- Alertes (erreurs / statut) ---- */
+    .tv-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: .7rem;
+        border-radius: 12px;
+        padding: .85rem 1rem;
+        font-size: 0.875rem;
+    }
+    .tv-alert-error {
+        background: rgba(254, 242, 242, .85);
+        border: 1px solid rgba(254, 202, 202, .9);
+        color: #991b1b;
+    }
+    .tv-alert-success {
+        background: rgba(239, 246, 255, .85);
+        border: 1px solid rgba(191, 219, 254, .9);
+        color: #1e40af;
+    }
+}

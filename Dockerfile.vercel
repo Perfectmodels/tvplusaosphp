@@ -1,0 +1,27 @@
+FROM node:24-bookworm-slim AS frontend
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY vite.config.js tailwind.config.js postcss.config.js ./
+COPY resources ./resources
+COPY public ./public
+RUN npm run build
+
+FROM dunglas/frankenphp:1-php8.4-bookworm AS runtime
+RUN install-php-extensions pdo_mysql pdo_pgsql intl zip bcmath gd imagick pcntl
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --prefer-dist --no-interaction
+COPY . ./
+COPY --from=frontend /app/public/build ./public/build
+RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs storage/app/public bootstrap/cache \
+    && composer dump-autoload --no-dev --optimize --no-interaction \
+    && chmod +x /app/vercel-entrypoint.sh
+ENV APP_ENV=production APP_DEBUG=false LOG_CHANNEL=stderr \
+    LARAVEL_STORAGE_PATH=/tmp/tvplus-storage \
+    SESSION_DRIVER=database SESSION_ENCRYPT=true CACHE_STORE=database \
+    QUEUE_CONNECTION=sync BROADCAST_CONNECTION=null \
+    APP_TRUSTED_PROXIES=* XDG_CONFIG_HOME=/tmp/caddy/config XDG_DATA_HOME=/tmp/caddy/data
+EXPOSE 80
+ENTRYPOINT ["/app/vercel-entrypoint.sh"]

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://ecomatin.test/gabon/projet-gazier-perenco</loc>
+    <news:news>
+      <news:publication>
+        <news:name>EcoMatin</news:name>
+        <news:language>fr</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-22T08:00:00+00:00</news:publication_date>
+      <news:title>Gabon : le projet gazier de Perenco accuse deux ans de retard</news:title>
+      <news:keywords>Gabon, Perenco, gaz</news:keywords>
+    </news:news>
+    <image:image>
+      <image:loc>https://ecomatin.test/img/perenco.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://ecomatin.test/cameroun/beac-taux-directeurs</loc>
+    <news:news>
+      <news:publication>
+        <news:name>EcoMatin</news:name>
+        <news:language>fr</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T16:00:00+00:00</news:publication_date>
+      <news:title>Cameroun : la BEAC relève ses taux directeurs</news:title>
+    </news:news>
+  </url>
+</urlset>
