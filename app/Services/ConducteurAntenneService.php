@@ -59,6 +59,14 @@ final class ConducteurAntenneService
                     }
                 }
 
+                // A manual presenter switch can be ahead of the elapsed clock.
+                // Do not move the conductor backwards on the next read.
+                $manualActive = $sequences->firstWhere('id', (int) $conducteur->active_sequence_id);
+                if (! $terminee && $manualActive
+                    && (int) $manualActive->position > (int) $active->position) {
+                    $active = $manualActive;
+                }
+
                 foreach ($sequences as $sequence) {
                     $before = (int) $sequence->position < (int) $active->position;
                     $after = (int) $sequence->position > (int) $active->position;
