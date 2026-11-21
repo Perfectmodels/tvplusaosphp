@@ -33,12 +33,9 @@
             'notes_preview' => \Illuminate\Support\Str::limit(strip_tags((string) $s->notes_presentateur), 140),
         ];
     })->values()->all();
-    $canAnyCreate = $user && (
-        $user->can('create', \App\Models\Sequence::class)
-        || $user->can('updateEnTete', $conducteur)
-        || $user->hasAnyRole(['admin', 'superadmin', 'chef_edition', 'chef_redaction', 'directeur_general'])
-        || $user->canAny(['journaliste', 'journaliste_chef'])
-    );
+    // Keep visible actions aligned with the server-side permission.
+    $canAnyCreate = $user && ! $conducteur->date_locked_at
+        && $user->can('crudSequencePresentateur', \App\Models\Sequence::class);
     $canReorder  = $user && $user->can('reorderSequences', $conducteur);
 @endphp
 
