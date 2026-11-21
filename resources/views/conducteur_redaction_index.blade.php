@@ -23,18 +23,17 @@
 @endif
 
         @if($conducteurs->count() === 0)
-            <div class="p-16 text-center bg-white border border-outline/10 rounded-xl shadow-sm">
-                <div class="w-16 h-16 mx-auto mb-5 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl">
-                    <i class="fa-solid fa-newspaper"></i>
-                </div>
-                <p class="text-lg italic text-secondary mb-3">Aucun conducteur de rédaction pour cette date.</p>
-                <p class="text-sm text-on-surface-variant max-w-md mx-auto">
-                    Choisissez une autre date pour retrouver vos conducteurs.
-                    @can('create', \App\Models\Conducteur::class)
-                        Utilisez « Nouveau conducteur de rédaction » pour préparer cette édition.
-                    @endcan
-                </p>
-            </div>
+            <x-ui.empty-state icon="fa-newspaper"
+                title="Aucun conducteur de rédaction pour cette date"
+                description="Sélectionnez une autre date pour retrouver les sujets et leur suivi de production.">
+                @can('create', \App\Models\Conducteur::class)
+                    <x-slot:actions>
+                        <a href="{{ $createRedactionUrl }}" class="ui-action ui-action--primary">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> Créer un conducteur de rédaction
+                        </a>
+                    </x-slot:actions>
+                @endcan
+            </x-ui.empty-state>
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-bulk-list="bulk-conducteurs-redaction">
                 @foreach($conducteurs as $c)
@@ -104,8 +103,11 @@
                                     <span class="uppercase tracking-wider text-on-surface-variant">Progression globale</span>
                                     <span class="font-bold text-blue-700">{{ $progression }}%</span>
                                 </div>
-                                <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-blue-600 rounded-full transition-all duration-500" style="width:{{ $progression }}%"></div>
+                                <div class="h-2 w-full overflow-hidden rounded-full bg-surface-container-high"
+                                     role="progressbar" aria-label="Progression des sujets de {{ $titreConducteur }}"
+                                     aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ max(0, min(100, $progression)) }}">
+                                    <div class="h-full rounded-full bg-primary transition-[width] duration-300"
+                                         style="width:{{ max(0, min(100, $progression)) }}%"></div>
                                 </div>
                             </div>
                         </div>
