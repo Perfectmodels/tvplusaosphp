@@ -119,7 +119,10 @@ final class ConducteurLifecycleController extends Controller
                 'Ce conducteur est verrouillé.',
             );
             if ($interdireAntenneActive) {
-                abort_if($locked->antenne_en_marche, 422, 'Mettez fin au direct avant la clôture.');
+                abort_if($locked->antenne_en_marche
+                    || ($locked->status === StatutConducteurEnum::En_direct && ! $locked->antenne_terminee),
+                    422,
+                    'Terminez le direct, même s’il est en pause, avant la clôture.');
             }
             $locked->update(array_merge(['status' => $cible], $champs));
         });
