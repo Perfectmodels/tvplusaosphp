@@ -246,13 +246,15 @@ $statusSplash = [
 </section>
 
 @can('create', \App\Models\VeilleSubject::class)
-<div id="scrapeModal" data-modal-backdrop class="fixed inset-0 z-[70] hidden">
+<div id="scrapeModal" data-modal-backdrop role="dialog" aria-modal="true"
+     aria-labelledby="scrape-modal-title" tabindex="-1"
+     class="fixed inset-0 z-[70] hidden focus:outline-none">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-modal-close></div>
     <div class="relative z-10 flex items-start sm:items-center justify-center min-h-screen p-4 overflow-y-auto">
-        <div class="w-full max-w-2xl bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-outline-variant overflow-hidden max-h-[92dvh] overflow-y-auto">
             <div class="px-6 py-4 border-b border-surface-variant flex justify-between items-center bg-surface-container-low/40">
                 <div>
-                    <h3 class="text-[20px] font-bold text-on-background">Importer un article via scraping</h3>
+                    <h3 id="scrape-modal-title" class="text-xl font-bold text-on-surface">Importer un article</h3>
                     <p class="text-sm text-on-surface-variant mt-1">Collez un lien d\'actualité (site web ou flux RSS).</p>
                 </div>
                 <button type="button" data-modal-close aria-label="Fermer" class="w-11 h-11 rounded-full hover:bg-surface-variant text-on-surface-variant transition flex items-center justify-center">
@@ -271,8 +273,8 @@ $statusSplash = [
                     @error('url')<p class="text-sm text-error mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Source associée (optionnel)</label>
-                    <select name="source_id" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base text-on-background">
+                    <label for="scrape-source" class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Source associée (optionnel)</label>
+                    <select id="scrape-source" name="source_id" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base text-on-background">
                         <option value="">Aucune</option>
                         @foreach($sources as $s)
                         <option value="{{ $s->id }}">{{ $s->name }} ({{ strtoupper($s->type) }})</option>
@@ -280,7 +282,7 @@ $statusSplash = [
                     </select>
                 </div>
 
-                <div id="scrapePreview" class="hidden space-y-3">
+                <div id="scrapePreview" class="hidden space-y-3" role="status" aria-live="polite">
                     <div class="h-px bg-surface-variant my-2"></div>
                     <div class="flex items-center gap-2 text-sm font-semibold tracking-wider uppercase text-on-surface-variant">
                         <i class="fa-solid fa-sparkles text-secondary"></i>
@@ -314,8 +316,47 @@ $statusSplash = [
     if (!modal) return;
 
     const closeEls = modal.querySelectorAll('[data-modal-close]');
-    document.addEventListener('click', e => { if (e.target.closest('[data-modal-open="scrapeModal"]')) { e.preventDefault(); modal.classList.remove('hidden'); document.body.style.overflow='hidden'; } });
-    closeEls.forEach(c => c.addEventListener('click', e => { e.preventDefault(); modal.classList.add('hidden'); document.body.style.overflow=''; }));
+    let focusBeforeOpen = null;
+    let overflowBeforeOpen = '';
+    function openScrapeModal(trigger) {
+        if (!modal.classList.contains('hidden')) return;
+        focusBeforeOpen = trigger;
+        overflowBeforeOpen = document.body.style.overflow;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        (modal.querySelector('#scrape_url') || modal).focus({ preventScroll: true });
+    }
+    function closeScrapeModal() {
+        if (modal.classList.contains('hidden')) return;
+        modal.classList.add('hidden');
+        document.body.style.overflow = overflowBeforeOpen;
+        if (focusBeforeOpen?.isConnected) focusBeforeOpen.focus({ preventScroll: true });
+        focusBeforeOpen = null;
+    }
+    document.addEventListener('click', e => {
+        const trigger = e.target.closest('[data-modal-open="scrapeModal"]');
+        if (!trigger) return;
+        e.preventDefault();
+        openScrapeModal(trigger);
+    });
+    closeEls.forEach(button => button.addEventListener('click', e => {
+        e.preventDefault();
+        closeScrapeModal();
+    }));
+    modal.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); closeScrapeModal(); return; }
+        if (e.key !== 'Tab') return;
+        const focusables = Array.from(modal.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(el => el.getClientRects().length);
+        if (!focusables.length) { e.preventDefault(); modal.focus(); return; }
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+            e.preventDefault(); first.focus();
+        }
+    });
 
     const csrf  = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const urlIn = document.getElementById('scrape_url');
