@@ -123,7 +123,50 @@ class ConducteurRealtimeTest extends TestCase
 
         $this->getJson("/conducteurs/chef-edition/{$conducteur->id}/live-state")
             ->assertOk()
-            ->assertJsonPath('sequences.0.title', 'Sujet ajouté');
+            ->assertJsonPath('sequences.0.title', 'Sujet ajouté')
+            ->assertJsonPath('chefSequences.0.title', 'Sujet ajouté')
+            ->assertJsonPath('chefSequences.0.duration_seconds', 120)
+            ->assertJsonPath('chefSequences.0.can_edit', true);
+    }
+
+    public function test_chef_edition_sequence_payload_exposes_its_position_for_editing(): void
+    {
+        $conducteur = $this->conducteur('emission');
+        $sequence = Sequence::create([
+            'conducteur_id' => $conducteur->id,
+            'title' => 'Position conservée',
+            'type' => 'SUJET',
+            'position' => 1,
+            'duration_seconds' => 120,
+        ]);
+
+        $this->actingAs($this->user('admin'))
+            ->getJson("/conducteurs/sequences/{$sequence->id}/payload")
+            ->assertOk()
+            ->assertJsonPath('position', 1);
+    }
+
+    public function test_chef_edition_refuses_debate_without_guests_and_zero_duration(): void
+    {
+        $conducteur = $this->conducteur('emission');
+        $this->actingAs($this->user('admin'));
+
+        $this->postJson('/conducteurs/sequences', [
+            'conducteur_id' => $conducteur->id,
+            'title' => 'Débat sans invités',
+            'type' => 'DÉBAT',
+            'duration_minutes' => 5,
+        ])->assertUnprocessable()->assertJsonValidationErrors('intervenant_ids');
+
+        $this->postJson('/conducteurs/sequences', [
+            'conducteur_id' => $conducteur->id,
+            'title' => 'Séquence sans durée',
+            'type' => 'SUJET',
+            'duration_minutes' => 0,
+            'duration_seconds' => 0,
+        ])->assertUnprocessable()->assertJsonValidationErrors('duration_minutes');
+
+        $this->assertSame(0, $conducteur->sequences()->count());
     }
 
     public function test_presentateur_live_snapshot_includes_a_new_emission_sequence(): void
