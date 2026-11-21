@@ -1193,7 +1193,8 @@
                                      class="absolute z-30 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-outline bg-white shadow-lg">
                                     @foreach($intervenants as $int)
                                         <button type="button"
-                                                x-show="intervenantCorrespondCp('{{ addslashes(strtolower((is_object($int->civilite) && method_exists($int->civilite, 'label') ? $int->civilite->label() : (string)($int->civilite?->value ?? $int->civilite)).' '.$int->prenom.' '.$int->nom.' '.($int->fonction ?? ''))) }}', inviteSearchCp)"
+                                                 x-show="intervenantCorrespondCp($el.dataset.search || '', inviteSearchCp)"
+                                                 data-search="{{ mb_strtolower(trim($int->prenom.' '.$int->nom.' '.($int->fonction ?? ''))) }}"
                                                 @click="inviteSelectionCp = {{ $int->id }}; ajouterInviteCp();"
                                                 :disabled="seqForm.intervenant_ids.includes({{ $int->id }})"
                                                 class="w-full text-left px-3 py-2 hover:bg-surface-container transition-colors flex items-center justify-between gap-2 border-b border-outline/10 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed">
