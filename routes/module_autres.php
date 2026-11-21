@@ -76,6 +76,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/emission', [ConducteurEmissionController::class, 'store'])->name('emission.store');
         Route::get('/emission/{conducteur}', [ConducteurEmissionController::class, 'show'])->name('emission.show');
         Route::get('/emission/{conducteur}/export-pdf', [ConducteurExportController::class, 'export'])->name('emission.export-pdf');
+        Route::get('/emission/{conducteur}/export-script-pdf', [ConducteurExportController::class, 'script'])->name('emission.export-script-pdf');
+        Route::get('/emission/{conducteur}/export-dossier-pdf', [ConducteurExportController::class, 'dossier'])->name('emission.export-dossier-pdf');
         Route::post('/emission/{conducteur}/presentateur', [ConducteurEmissionController::class, 'updatePresentateur'])->name('presentateur.update');
         Route::get('/emission/{conducteur}/interactions', [ConducteurPresentateurController::class, 'interactionMessages'])->name('emission.interactions.index');
         Route::post('/emission/{conducteur}/qr', [EmissionInteractionController::class, 'generateQr'])->name('emission.interactions.generate-qr');
