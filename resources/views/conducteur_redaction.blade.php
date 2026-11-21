@@ -171,32 +171,42 @@
                     Exporter (PDF)
                 </a>
                 @can('update', $conducteur)
-                    <details class="group relative">
-                        <summary class="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-outline/30 bg-white px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
-                            <i class="fa-solid fa-bell text-xs text-error" aria-hidden="true"></i>
-                            Diffuser une alerte
-                            <i class="fa-solid fa-chevron-down text-xs transition-transform group-open:rotate-180" aria-hidden="true"></i>
-                        </summary>
-                        <div class="absolute right-0 top-full z-40 mt-2 w-[min(360px,calc(100vw-2rem))] rounded-xl border border-outline/25 bg-white p-4 shadow-lg">
-                            <form method="POST" action="{{ route('alertes-info.store') }}" class="space-y-3">
+                    <button type="button"
+                            @click="$dispatch('open-modal', 'conducteur-alerte')"
+                            class="ui-action ui-action--outline">
+                        <i class="fa-solid fa-bell text-error" aria-hidden="true"></i> Diffuser une alerte
+                    </button>
+                    <x-modal name="conducteur-alerte" label="Diffuser une alerte à l'équipe" maxWidth="lg">
+                        <div class="flex items-center justify-between border-b border-outline-variant px-5 py-4">
+                            <div>
+                                <h2 class="text-base font-bold text-on-surface">Diffuser une alerte</h2>
+                                <p class="mt-1 text-xs text-on-surface-variant">Le message sera visible dans l'application.</p>
+                            </div>
+                            <button type="button" @click="$dispatch('close-modal', 'conducteur-alerte')"
+                                    class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low"
+                                    aria-label="Fermer la fenêtre d'alerte">
+                                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+<form method="POST" action="{{ route('alertes-info.store') }}" class="space-y-4 p-5">
                                 @csrf
                                 <div>
                                     <label for="alerte-titre" class="mb-1 block text-xs font-semibold text-on-surface-variant">Titre</label>
                                     <input id="alerte-titre" name="titre" required maxlength="150"
-                                           class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                           class="ui-field"
                                            placeholder="Ex : Coupure de diffusion">
                                 </div>
                                 <div>
                                     <label for="alerte-message" class="mb-1 block text-xs font-semibold text-on-surface-variant">Message</label>
                                     <textarea id="alerte-message" name="message" required maxlength="1000" rows="3"
-                                              class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                              class="ui-field"
                                               placeholder="Précisez ce que l’équipe doit savoir."></textarea>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label for="alerte-niveau" class="mb-1 block text-xs font-semibold text-on-surface-variant">Niveau</label>
                                         <select id="alerte-niveau" name="niveau"
-                                                class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                                class="ui-field">
                                             <option value="info">Information</option>
                                             <option value="avertissement">Avertissement</option>
                                             <option value="urgence">Urgence</option>
@@ -205,22 +215,21 @@
                                     <div>
                                         <label for="alerte-expire" class="mb-1 block text-xs font-semibold text-on-surface-variant">Expire le (facultatif)</label>
                                         <input id="alerte-expire" name="expire_at" type="datetime-local"
-                                               class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                               class="ui-field">
                                     </div>
                                 </div>
                                 <div>
                                     <label for="alerte-ordre" class="mb-1 block text-xs font-semibold text-on-surface-variant">Ordre dans la pile (facultatif)</label>
                                     <input id="alerte-ordre" name="ordre" type="number" min="0" step="1"
                                            placeholder="Par défaut : passe au-dessus des alertes précédentes"
-                                           class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                                           class="ui-field">
                                 </div>
                                 <button type="submit"
-                                        class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-error px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error">
+                                        class="ui-action ui-action--danger w-full">
                                     <i class="fa-solid fa-paper-plane text-xs" aria-hidden="true"></i> Diffuser sur toutes les pages
                                 </button>
                             </form>
-                        </div>
-                    </details>
+                    </x-modal>
                 @endcan
 
             </div>
