@@ -58,7 +58,7 @@
 @section('content')
 
 <!-- 5 KPIs GRID COLS-5 -->
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+<section class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5" aria-label="Indicateurs du répertoire des intervenants">
     <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/30 flex items-center gap-4 custom-shadow">
         <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center flex-shrink-0 text-secondary">
             <span class="material-symbols-outlined text-lg">groups</span>
@@ -90,7 +90,7 @@
             <span class="material-symbols-outlined text-lg">assignment_return</span>
         </div>
         <div>
-            <div class="text-xs font-label-sm text-on-surface-variant uppercase tracking-wider mb-1">À relancer</div>
+            <div class="text-xs font-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Occupés / indisponibles</div>
             <div class="flex items-end gap-2">
                 <span class="font-headline-lg text-headline-lg text-primary-container font-bold">{{ number_format($aRelancer, 0, ',', ' ') }}</span>
                 <span class="text-xs text-on-surface-variant mb-1">{{ $pctRelancer }}%</span>
@@ -123,12 +123,12 @@
             </div>
         </div>
     </div>
-</div>
+</section>
 
 <!-- FILTERS -->
-<div class="flex flex-col gap-4 mb-8">
+<div class="mb-6 flex flex-col gap-4">
     <!-- Quick filters pills -->
-    <div class="mobile-wrap-tabs flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <nav class="mobile-wrap-tabs flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" aria-label="Filtres rapides des intervenants">
         @php
             $qsBase = ['q' => $recherche, 'type' => $type, 'dispo' => $dispo];
             $qsActive = request()->query();
@@ -140,7 +140,7 @@
             };
         @endphp
         <a href="{{ route('intervenants.index', array_merge($qsBase, ['dispo' => null, 'filtre' => null])) }}" class="{{ $pillClass($isTous) }}">
-            <span class="material-symbols-outlined text-sm">grid_view</span>
+            <span class="material-symbols-outlined text-sm" aria-hidden="true">grid_view</span>
             Tous
         </a>
         <a href="{{ route('intervenants.index', array_merge($qsBase, ['dispo' => StatutDispoIntervenantEnum::Disponible->value, 'filtre' => null])) }}" class="{{ $pillClass($dispo === StatutDispoIntervenantEnum::Disponible->value) }}">
@@ -149,11 +149,11 @@
         </a>
         <a href="{{ route('intervenants.index', array_merge($qsBase, ['dispo' => StatutDispoIntervenantEnum::Occupe->value, 'filtre' => null])) }}" class="{{ $pillClass($dispo === StatutDispoIntervenantEnum::Occupe->value) }}">
             <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-            À booker
+            Occupés
         </a>
         <a href="{{ route('intervenants.index', array_merge($qsBase, ['dispo' => StatutDispoIntervenantEnum::Interdit->value, 'filtre' => null])) }}" class="{{ $pillClass($dispo === StatutDispoIntervenantEnum::Interdit->value) }}">
             <span class="material-symbols-outlined text-sm text-red-500">cached</span>
-            Relances
+            Interdits
         </a>
         <a href="{{ route('intervenants.index', array_merge($qsBase, ['dispo' => null, 'filtre' => 'bookes'])) }}" class="{{ $pillClass($filtreRapide === 'bookes') }}">
             <span class="material-symbols-outlined text-sm text-blue-500">event_available</span>
@@ -163,29 +163,30 @@
             <span class="material-symbols-outlined text-sm text-purple-500">auto_awesome</span>
             Nouveaux
         </a>
-    </div>
+    </nav>
 
     <!-- Detailed filters -->
-    <form method="GET" action="{{ route('intervenants.index') }}" class="flex flex-wrap items-center gap-3">
+    <form method="GET" action="{{ route('intervenants.index') }}" class="flex flex-wrap items-end gap-3 rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5" aria-label="Rechercher et filtrer les intervenants">
         <div class="relative flex-1 min-w-[200px]">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
             <input
-                type="text"
+                type="search"
                 name="q"
+                aria-label="Rechercher un intervenant"
                 value="{{ $recherche }}"
                 placeholder="Rechercher un intervenant à booker..."
                 class="w-full pl-9 pr-4 py-2 bg-surface rounded-lg border border-outline-variant/50 focus:border-primary-container focus:ring-1 focus:ring-primary-container text-sm font-body-sm outline-none transition-all"
             />
         </div>
 
-        <select name="type" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
+        <select name="type" aria-label="Catégorie d’intervenant" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
             <option value="">Toutes les catégories</option>
             @foreach(TypeIntervenantEnum::cases() as $e)
                 <option value="{{ $e->value }}" @selected($type === $e->value)>{{ $e->label() }}</option>
             @endforeach
         </select>
 
-        <select name="dispo" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
+        <select name="dispo" aria-label="Disponibilité de l’intervenant" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
             <option value="">Disponibilité</option>
             @foreach(StatutDispoIntervenantEnum::cases() as $e)
                 <option value="{{ $e->value }}" @selected($dispo === $e->value)>{{ preg_replace('/^[^\s]+\s+/u', '', $e->label()) }}</option>
@@ -201,14 +202,14 @@
                 ->distinct()->orderBy('ville_residence')->limit(30)->pluck('ville_residence');
         @endphp
 
-        <select name="fonction" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
+        <select name="fonction" aria-label="Filtrer par fonction" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
             <option value="">Fonction</option>
             @foreach($fonctionsDistinctes as $f)
                 <option value="{{ $f }}" @selected(request('fonction') === $f)>{{ $f }}</option>
             @endforeach
         </select>
 
-        <select name="ville" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
+        <select name="ville" aria-label="Filtrer par ville" class="px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm font-body-sm hover:bg-surface-container transition-colors outline-none pr-8">
             <option value="">Ville</option>
             @foreach($villesDistinctes as $v)
                 <option value="{{ $v }}" @selected(request('ville') === $v)>{{ $v }}</option>
@@ -219,7 +220,7 @@
             <input type="search" data-emission-search aria-label="Rechercher une émission pour filtrer les invités"
                    placeholder="Rechercher une émission…" autocomplete="off"
                    class="w-full px-3 py-2 bg-surface border border-outline-variant/50 rounded-lg text-sm outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container">
-            <select name="emission_id" data-emission-select
+            <select name="emission_id" data-emission-select aria-label="Filtrer par émission"
                     class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container">
                 <option value="">Toutes les émissions</option>
                 @foreach($emissions as $id => $nom)
@@ -233,7 +234,7 @@
             Réinitialiser
         </a>
 
-        <button type="submit" class="px-4 py-2.5 bg-primary-container text-white rounded-lg text-sm font-label-sm hover:bg-secondary transition-colors">
+        <button type="submit" class="ui-action ui-action--primary">
             Filtrer
         </button>
     </form>
@@ -244,7 +245,7 @@
     @include('_partials.bulk-delete-toolbar', ['resource' => 'intervenants'])
 @endif
 
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8" data-bulk-list="bulk-intervenants">
+<div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" data-bulk-list="bulk-intervenants">
     @forelse($intervenants as $i)
         @php
             $statut = $i->disponibilite ?? StatutDispoIntervenantEnum::Disponible;
@@ -264,9 +265,9 @@
                 default => 'bg-surface-container-highest text-on-surface-variant',
             };
         @endphp
-    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/30 overflow-hidden flex flex-col custom-shadow group">
+    <article class="group flex h-full flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm transition-colors hover:border-secondary/40 focus-within:border-secondary">
         <div class="px-3">@include('_partials.bulk-delete-checkbox', ['resource' => 'intervenants', 'record' => $i, 'label' => $i->nom_complet])</div>
-        <div class="relative h-40 bg-surface-container">
+        <div class="relative h-48 bg-surface-container">
             <div class="absolute top-2 left-2 z-10 {{ $statutColorClass }} flex items-center gap-1">
                 {{ $statutText }}
             </div>
@@ -301,9 +302,9 @@
         </div>
         <div class="p-4 flex-1 flex flex-col">
             <a href="{{ route('intervenants.show', $i) }}" class="hover:text-primary-container transition-colors">
-                <h3 class="font-headline-sm text-headline-sm text-on-surface mb-1 line-clamp-1">{{ $i->nom_complet }}</h3>
+                <h3 class="mb-1 line-clamp-2 min-h-11 text-base font-bold leading-snug text-on-surface">{{ $i->nom_complet }}</h3>
             </a>
-            <p class="text-xs text-on-surface-variant mb-3 line-clamp-1">
+            <p class="mb-3 line-clamp-2 min-h-8 text-sm leading-snug text-on-surface-variant">
                 {{ $i->fonction ?: ($i->poste ?: ($i->organisme ?? '—')) }}
                 @if($i->organisme && $i->fonction) · {{ $i->organisme }} @endif
             </p>
@@ -318,13 +319,13 @@
             </div>
             <a
                 href="{{ route('parcours-intervenants.index', ['intervenant_id' => $i->id]) }}"
-                class="w-full flex items-center justify-between px-4 py-2 bg-primary-container text-white rounded-lg text-sm font-label-sm hover:bg-secondary transition-colors"
+                class="ui-action ui-action--primary w-full justify-between"
             >
-                Booker
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                Gérer le parcours
+                <span class="material-symbols-outlined text-sm" aria-hidden="true">arrow_forward</span>
             </a>
         </div>
-    </div>
+    </article>
     @empty
         <div class="col-span-full bg-surface-container-lowest rounded-xl border border-outline-variant/30 p-12 text-center">
             <div class="w-16 h-16 mx-auto rounded-full bg-surface-container-highest flex items-center justify-center mb-4 text-on-surface-variant">
