@@ -93,6 +93,23 @@ class EditorialModuleUiTest extends TestCase
         $this->assertStringContainsString(route('parcours-intervenants.index', ['intervenant_id' => $person->id]), $html);
     }
 
+    public function test_intervenant_details_no_longer_offer_fake_pdf_and_regeneration_is_post(): void
+    {
+        $person = Intervenant::create([
+            'nom' => 'Mballa',
+            'prenom' => 'Jeanne',
+        ]);
+        $html = $this->actingAs($this->admin())
+            ->get(route('intervenants.show', $person))
+            ->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('Exporter PDF', $html);
+        $this->assertStringContainsString('Retour au répertoire', $html);
+        $this->assertStringContainsString('form="regen-qr-form"', $html);
+        $this->assertStringContainsString('method="POST"', $html);
+        $this->assertStringContainsString('Gérer le parcours', $html);
+    }
+
     public function test_veille_subject_page_has_accessible_tabs_and_modal(): void
     {
         $subject = VeilleSubject::create([
