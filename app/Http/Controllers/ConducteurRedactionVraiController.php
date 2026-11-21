@@ -181,6 +181,7 @@ final class ConducteurRedactionVraiController extends Controller
     public function show(Request $request, Conducteur $conducteur)
     {
         abort_if((string) $conducteur->type !== 'redaction', 404, 'Ce conducteur n\'est pas un conducteur de Rédaction.');
+        Gate::authorize('view', $conducteur);
 
         $conducteur->loadMissing(['presentateur']);
         $sequences = $conducteur->sequences()
@@ -308,6 +309,9 @@ final class ConducteurRedactionVraiController extends Controller
     public function storeSujet(Request $request, Conducteur $conducteur): JsonResponse
     {
         Gate::authorize('crudSequenceRedaction', Sequence::class);
+        Gate::authorize('view', $conducteur);
+        abort_unless((string) $conducteur->type === 'redaction', 404);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
 
         $valid = $request->validate([
             'position' => ['sometimes', 'integer', 'min:1'],
@@ -529,28 +533,28 @@ final class ConducteurRedactionVraiController extends Controller
     public function reorderSujets(Request $request, Conducteur $conducteur): JsonResponse
     {
         Gate::authorize('reorderSujetsRedaction', $conducteur);
+        Gate::authorize('view', $conducteur);
+        abort_unless((string) $conducteur->type === 'redaction', 404);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
         $valid = $request->validate([
             'ordered_ids' => ['required', 'array', 'min:1'],
-            'ordered_ids.*' => ['integer'],
+            'ordered_ids.*' => ['required', 'integer', 'distinct'],
         ]);
         $orderedIds = array_values(array_map('intval', $valid['ordered_ids']));
-        $position = 1;
-        foreach ($orderedIds as $seqId) {
-            $seq = Sequence::where('conducteur_id', $conducteur->id)
-                ->whereKey($seqId)
-                ->first(['id', 'position']);
-            if ($seq) {
-                $seq->timestamps = false;
-                $seq->updateQuietly(['position' => $position]);
+        $dbIds = $conducteur->sequences()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        if (collect($orderedIds)->sort()->values()->all() !== $dbIds) {
+            return response()->json(['ok' => false, 'message' => 'Liste de séquences incomplète ou étrangère au conducteur.'], 422);
+        }
+        DB::transaction(function () use ($conducteur, $orderedIds): void {
+            // Serialize competing reorder operations on the same conductor.
+            Conducteur::query()->whereKey($conducteur->id)->lockForUpdate()->firstOrFail();
+            foreach ($orderedIds as $position => $seqId) {
+                Sequence::query()->where('conducteur_id', $conducteur->id)->whereKey($seqId)
+                    ->update(['position' => $position + 1]);
             }
-            $position++;
-        }
-        ConducteurChanged::dispatch((int) $conducteur->id);
-
-        try {
             ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
-        } catch (\Throwable) {
-        }
+        });
+        ConducteurChanged::dispatch((int) $conducteur->id);
 
         return response()->json(['ok' => true, 'message' => 'Ordre mis à jour.']);
     }
