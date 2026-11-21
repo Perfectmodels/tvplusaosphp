@@ -480,6 +480,15 @@ class ConducteurPresentateurController extends Controller
         $hdNorm = self::normaliserHM($valid['heure_debut']);
         $hfNorm = self::normaliserHM($valid['heure_fin']);
         $duree = self::diffHeuresEnSecondes($hdNorm, $hfNorm);
+        if ($duree === 0) {
+            return response()->json(['ok' => false, 'message' => 'Les heures doivent définir une durée non nulle.'], 422);
+        }
+        if (in_array(mb_strtoupper((string) $type->value), ['DÉBAT', 'DEBAT'], true)) {
+            $nbInvites = count($valid['intervenant_ids'] ?? []);
+            if ($nbInvites < 2 || $nbInvites > 4) {
+                return response()->json(['ok' => false, 'message' => 'Un débat doit avoir entre 2 et 4 intervenants.'], 422);
+            }
+        }
         $start = self::fusionDateTime($conducteur->date_edition, $hdNorm);
         $end = self::fusionDateTime($conducteur->date_edition, $hfNorm);
         $pos = isset($valid['position']) && (int) $valid['position'] > 0
@@ -579,6 +588,15 @@ class ConducteurPresentateurController extends Controller
         $hdNorm = self::normaliserHM($valid['heure_debut']);
         $hfNorm = self::normaliserHM($valid['heure_fin']);
         $duree = self::diffHeuresEnSecondes($hdNorm, $hfNorm);
+        if ($duree === 0) {
+            return response()->json(['ok' => false, 'message' => 'Les heures doivent définir une durée non nulle.'], 422);
+        }
+        if (in_array(mb_strtoupper((string) $type->value), ['DÉBAT', 'DEBAT'], true)) {
+            $nbInvites = count($valid['intervenant_ids'] ?? []);
+            if ($nbInvites < 2 || $nbInvites > 4) {
+                return response()->json(['ok' => false, 'message' => 'Un débat doit avoir entre 2 et 4 intervenants.'], 422);
+            }
+        }
         $start = self::fusionDateTime($conducteur->date_edition, $hdNorm);
         $end = self::fusionDateTime($conducteur->date_edition, $hfNorm);
 
@@ -672,40 +690,48 @@ class ConducteurPresentateurController extends Controller
     public function reorderSequences(Request $request, Conducteur $conducteur): JsonResponse
     {
         Gate::authorize('reorderSequences', $conducteur);
-
-        if ($conducteur->date_locked_at) {
-            return response()->json(['ok' => false, 'message' => 'Conducteur verrouillé.'], 403);
-        }
+        Gate::authorize('view', $conducteur);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
+        abort_unless((string) $conducteur->type === 'emission', 404);
 
         $valid = $request->validate([
             'ordered_ids' => ['required', 'array', 'min:1'],
-            'ordered_ids.*' => ['integer'],
+            'ordered_ids.*' => ['required', 'integer', 'distinct'],
         ]);
+        $ids = array_map('intval', $valid['ordered_ids']);
+        $success = DB::transaction(function () use ($conducteur, $ids): bool {
+            Conducteur::query()->whereKey($conducteur->id)->lockForUpdate()->firstOrFail();
+            $existing = Sequence::query()->where('conducteur_id', $conducteur->id)
+                ->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+            if ($existing !== collect($ids)->sort()->values()->all()) return false;
 
-        $ordered = $valid['ordered_ids'];
-        $dbIds = Sequence::where('conducteur_id', $conducteur->id)->pluck('id')->map(fn ($v) => (int) $v)->sort()->values()->all();
-        $checkIds = collect($ordered)->map(fn ($v) => (int) $v)->sort()->values()->all();
-        if ($dbIds !== $checkIds) {
-            return response()->json(['ok' => false, 'message' => 'Identifiants incohérents pour réord.'], 422);
-        }
-
-        foreach ($ordered as $pos => $id) {
-            $s = Sequence::find((int) $id);
-            if (! $s || (int) $s->conducteur_id !== (int) $conducteur->id) {
-                continue;
+            foreach ($ids as $position => $id) {
+                Sequence::query()->where('conducteur_id', $conducteur->id)
+                    ->whereKey($id)->update(['position' => $position + 1]);
             }
-            $s->timestamps = false;
-            $s->updateQuietly(['position' => (int) $pos + 1]);
+
+            \App\Services\ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
+            return true;
+        });
+        if (! $success) {
+            return response()->json(['ok' => false, 'message' => 'Séquences absentes ou étrangères à ce conducteur.'], 422);
         }
 
         ConducteurChanged::dispatch((int) $conducteur->id);
-
-        $conducteur->touch();
+        $sequences = $conducteur->sequences()->orderBy('position')->get();
 
         return response()->json([
             'ok' => true,
-            'message' => count($ordered).' séquences réordonnées.',
-            'ordered_ids' => $ordered,
+            'message' => count($ids).' séquences réordonnées.',
+            'ordered_ids' => $ids,
+            'sequences' => $sequences->map(fn (Sequence $s) => [
+                'id' => $s->id,
+                'position' => $s->position,
+                'heure_debut_calculee' => $s->heure_debut_calculee,
+                'heure_fin_calculee' => $s->heure_fin_calculee,
+                'duree_hm' => $s->duree_hm,
+            ])->values()->all(),
+            'duree_totale_hm' => $conducteur->fresh()->total_duration_hm,
         ]);
     }
 
