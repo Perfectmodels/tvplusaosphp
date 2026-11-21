@@ -396,7 +396,6 @@ export default function conducteurRedactionVrai() {
             this.$nextTick(() => this.$refs.sujetTitle?.focus());
         },
         openEditSujetModal(s) {
-            if (!this.canCrudRedac) { this.toast('Vous n\'avez pas les droits pour modifier ce sujet.', 'error'); return; }
             if (!s || !s.can_edit_redaction) {
                 this.toast('Modification non autorisée pour ce sujet.', 'error');
                 return;
@@ -476,7 +475,13 @@ export default function conducteurRedactionVrai() {
             return Object.keys(errs).length === 0;
         },
         async saveSujet() {
-            if (!this.canCrudRedac) { this.toast('Accès refusé.', 'error'); return; }
+            if (this.modalMode === 'create' && !this.canCrudRedac) {
+                this.toast('Création non autorisée.', 'error'); return;
+            }
+            if (this.modalMode === 'edit'
+                && !this.sujets.some(s => +s.id === +this.editingId && s.can_edit_redaction)) {
+                this.toast('Modification non autorisée.', 'error'); return;
+            }
             if (!this._validateSujetForm()) return;
             this.isSavingSujet = true;
 
@@ -551,7 +556,9 @@ export default function conducteurRedactionVrai() {
             }
         },
         async confirmDeleteSujet(s) {
-            if (!this.canCrudRedac) { this.toast('Vous n\'avez pas les droits pour supprimer ce sujet.', 'error'); return; }
+            if (!s?.can_delete_redaction) {
+                this.toast('Suppression non autorisée pour ce sujet.', 'error'); return;
+            }
             if (!s) return;
             const label = s.title ? `"${s.title}"` : 'ce sujet';
             const confirmation = window.TvAlert?.confirmDelete
