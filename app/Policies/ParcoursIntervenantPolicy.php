@@ -62,6 +62,11 @@ class ParcoursIntervenantPolicy
         };
     }
 
+    public function assignSequence(User $user, ParcoursIntervenant $parcours): bool
+    {
+        return $user->hasAnyRole(['journaliste', 'presentateur', 'chef_plateau', 'chef_redaction']);
+    }
+
     public function markDelay(User $user, ParcoursIntervenant $parcours): bool
     {
         return $user->hasAnyRole(['receptionniste', 'chef_plateau', 'journaliste', 'chef_redaction']);
