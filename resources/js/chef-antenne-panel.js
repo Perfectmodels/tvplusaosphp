@@ -18,6 +18,11 @@ export default function chefAntennePanel() {
         saving: false,
         saved: false,
         saveError: '',
+        syncState: 'pending',
+        lastSyncAt: '',
+        controlError: '',
+        _syncInterval: null,
+        _refreshing: false,
         _saveTimer: null,
         busy: false,
         _tick: null,
@@ -34,22 +39,28 @@ export default function chefAntennePanel() {
             this.routes = cfg.routes || {};
             this.refresh();
             this._tick = window.setInterval(() => this.computeElapsed(), 1000);
+            // Synchronize the active sequence and antenna timer across workstations.
+            this._syncInterval = window.setInterval(() => {
+                if (!document.hidden && !this.busy) this.refresh();
+            }, 10000);
         },
 
         destroy() {
             if (this._tick) window.clearInterval(this._tick);
+            if (this._syncInterval) window.clearInterval(this._syncInterval);
             if (this._saveTimer) window.clearTimeout(this._saveTimer);
             this.stopPrompterLoop();
         },
 
         async refresh() {
-            if (!this.routes.liveState) return;
+            if (!this.routes.liveState || this._refreshing) return;
+            this._refreshing = true;
             try {
                 const response = await fetch(this.routes.liveState, {
                     headers: { Accept: 'application/json' },
                     credentials: 'same-origin',
                 });
-                if (!response.ok) return;
+                if (!response.ok) throw new Error(`État antenne indisponible (${response.status}).`);
                 const data = await response.json();
                 this.sequences = data.sequences || [];
                 this.antenne = data.antenne || this.antenne;
@@ -64,8 +75,13 @@ export default function chefAntennePanel() {
                 this.computeElapsed();
                 if (!this.notesDirty) this.syncNotes();
                 this.notifyActive();
+                this.syncState = 'connected';
+                this.lastSyncAt = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             } catch (e) {
+                this.syncState = 'offline';
                 console.error('Chef antenne panel:', e);
+            } finally {
+                this._refreshing = false;
             }
         },
 
@@ -155,6 +171,7 @@ export default function chefAntennePanel() {
         async control(action) {
             if (this.busy || !this.routes[action]) return;
             this.busy = true;
+            this.controlError = '';
             try {
                 const response = await fetch(this.routes[action], {
                     method: 'POST',
@@ -166,11 +183,15 @@ export default function chefAntennePanel() {
                     },
                     body: '{}',
                 });
-                if (response.ok) {
-                    await this.refresh();
-                    if (action === 'start') this.ouvrirPrompter();
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => null);
+                    this.controlError = payload?.message || 'Impossible de piloter le chronomètre.';
+                    return;
                 }
+                await this.refresh();
+                if (action === 'start') this.ouvrirPrompter();
             } catch (e) {
+                this.controlError = 'Connexion interrompue. Vérifiez votre accès avant de réessayer.';
                 console.error('Chef antenne control:', e);
             } finally {
                 this.busy = false;
