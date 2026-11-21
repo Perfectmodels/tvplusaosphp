@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\StatutPresentationSequenceEnum;
+use App\Enums\StatutConducteurEnum;
 use App\Events\ConducteurChanged;
 use App\Models\Conducteur;
 use App\Models\Sequence;
@@ -96,6 +97,7 @@ final class ConducteurAntenneService
                             'antenne_started_at' => null,
                             'antenne_offset_sec' => $total,
                             'antenne_ended_at' => now(),
+                            'status' => StatutConducteurEnum::Cloture,
                         ];
                     }
                     $conducteur->timestamps = false;
