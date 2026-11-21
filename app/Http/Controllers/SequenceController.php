@@ -70,34 +70,46 @@ final class SequenceController extends Controller
             $duree = (int) $valid['duration_seconds'];
         }
 
-        $seq = Sequence::create([
-            'conducteur_id' => (int) $valid['conducteur_id'],
-            'title' => $valid['title'],
-            'type' => $valid['type'],
-            'duration_seconds' => $duree ?? 120,
-            'journaliste_responsable_id' => $valid['journaliste_responsable_id'] ?? null,
-            'nom_prenom_text' => $valid['nom_prenom_text'] ?? null,
-            'fonction_text' => $valid['fonction_text'] ?? null,
-            'note_regie' => $valid['note_regie'] ?? null,
-            'angle_editorial' => $valid['angle_editorial'] ?? null,
-            'alerte_info' => (bool) ($valid['alerte_info'] ?? false),
-            'position' => $valid['position'] ?? null,
-        ]);
+        $seq = \Illuminate\Support\Facades\DB::transaction(function () use ($valid, $duree, $conducteur): Sequence {
+            // Reserve the requested position under one conductor-level lock.
+            $conducteur = Conducteur::query()->lockForUpdate()->findOrFail($conducteur->id);
+            $maxPosition = (int) $conducteur->sequencesAvecMasques()->max('position');
+            $position = max(1, min((int) ($valid['position'] ?? ($maxPosition + 1)), $maxPosition + 1));
+            Sequence::query()
+                ->where('conducteur_id', $conducteur->id)
+                ->where('position', '>=', $position)
+                ->increment('position');
 
-        $ids = array_values(array_map('intval', $valid['intervenant_ids'] ?? []));
-        $this->synchroniserIntervenants($seq, $ids);
+            $seq = Sequence::create([
+                'conducteur_id' => $conducteur->id,
+                'title' => $valid['title'],
+                'type' => $valid['type'],
+                'duration_seconds' => $duree ?? 120,
+                'journaliste_responsable_id' => $valid['journaliste_responsable_id'] ?? null,
+                'nom_prenom_text' => $valid['nom_prenom_text'] ?? null,
+                'fonction_text' => $valid['fonction_text'] ?? null,
+                'note_regie' => $valid['note_regie'] ?? null,
+                'angle_editorial' => $valid['angle_editorial'] ?? null,
+                'alerte_info' => (bool) ($valid['alerte_info'] ?? false),
+                'position' => $position,
+            ]);
 
-        // Textes pré-remplis depuis l'invité principal (le 1ᵉʳ de la liste)
-        if ($ids !== []) {
-            $principal = Intervenant::find($ids[0]);
-            if ($principal && (empty($seq->nom_prenom_text) || empty($seq->fonction_text))) {
-                $prenomAbrege = $principal->prenom ? mb_substr($principal->prenom, 0, 1).'. ' : '';
-                $seq->updateQuietly([
-                    'nom_prenom_text' => $seq->nom_prenom_text ?: trim($prenomAbrege.($principal->nom ?? '')),
-                    'fonction_text' => $seq->fonction_text ?: ($principal->fonction ?? ''),
-                ]);
+            $ids = array_values(array_map('intval', $valid['intervenant_ids'] ?? []));
+            $this->synchroniserIntervenants($seq, $ids);
+
+            if ($ids !== []) {
+                $principal = Intervenant::find($ids[0]);
+                if ($principal && (empty($seq->nom_prenom_text) || empty($seq->fonction_text))) {
+                    $prenomAbrege = $principal->prenom ? mb_substr($principal->prenom, 0, 1).'. ' : '';
+                    $seq->updateQuietly([
+                        'nom_prenom_text' => $seq->nom_prenom_text ?: trim($prenomAbrege.($principal->nom ?? '')),
+                        'fonction_text' => $seq->fonction_text ?: ($principal->fonction ?? ''),
+                    ]);
+                }
             }
-        }
+
+            return $seq;
+        });
 
         ConducteurChanged::dispatch((int) $seq->conducteur_id);
 
