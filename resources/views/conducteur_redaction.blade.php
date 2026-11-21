@@ -153,17 +153,6 @@
     {{-- Bulles pop-up : message en cours + messages du public --}}
     @include('_partials.bulles-conducteur')
 
-    {{-- QR public, messages et antenne/notes : un même bloc visible dès l'ouverture --}}
-    <section class="mt-6 grid items-start gap-4 lg:grid-cols-2">
-        <div class="min-w-0 space-y-4">
-            @if((string) $conducteur->type === 'emission')
-                @include('_partials.chef-qr-public', ['conducteur' => $conducteur, 'interactionMessages' => $interactionMessages ?? collect(), 'interactionMessagesCount' => $interactionMessagesCount ?? 0])
-            @endif
-            @include('_partials.conducteur-sondage', ['conducteur' => $conducteur, 'sondage' => $sondage ?? null])
-        </div>
-        @include('_partials.chef-antenne-panel', ['conducteur' => $conducteur])
-    </section>
-
     {{-- =========== TABLE SECTION =========== --}}
 <section class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant bg-surface-container-low px-5 py-4">
@@ -378,6 +367,18 @@
                 <span x-text="sequences.length">{{ $sequences->count() }}</span> élément(s) dans le conducteur
             </p>
         </div>
+    </section>
+
+    {{-- Outils complémentaires : visibles après la programmation principale. --}}
+    {{-- QR public, messages et antenne/notes : un même bloc visible dès l'ouverture --}}
+    <section class="mt-6 grid items-start gap-4 lg:grid-cols-2">
+        <div class="min-w-0 space-y-4">
+            @if((string) $conducteur->type === 'emission')
+                @include('_partials.chef-qr-public', ['conducteur' => $conducteur, 'interactionMessages' => $interactionMessages ?? collect(), 'interactionMessagesCount' => $interactionMessagesCount ?? 0])
+            @endif
+            @include('_partials.conducteur-sondage', ['conducteur' => $conducteur, 'sondage' => $sondage ?? null])
+        </div>
+        @include('_partials.chef-antenne-panel', ['conducteur' => $conducteur])
     </section>
 
     {{-- =========== MODALE CRÉATION / ÉDITION SÉQUENCE =========== --}}
