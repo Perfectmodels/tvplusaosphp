@@ -8,9 +8,11 @@ use App\Models\Conducteur;
 use App\Models\DigitalPublication;
 use App\Models\EditorialStory;
 use App\Models\Journaliste;
+use App\Models\ParcoursIntervenant;
 use App\Models\Sequence;
 use App\Models\User;
 use App\Observers\SequenceObserver;
+use App\Policies\ParcoursIntervenantPolicy;
 use App\Observers\WorkspaceAccountObserver;
 use App\Observers\WorkspaceConducteurObserver;
 use App\Observers\WorkspacePublicationObserver;
@@ -23,6 +25,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -43,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Gate::policy(ParcoursIntervenant::class, ParcoursIntervenantPolicy::class);
         RateLimiter::for('assistant', fn (Request $request) => Limit::perMinute(10)
             ->by('assistant:'.$request->user()->getAuthIdentifier())
             ->response(fn (Request $request, array $headers) => response()->json([
