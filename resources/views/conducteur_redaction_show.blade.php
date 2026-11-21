@@ -898,6 +898,8 @@
                             Journaliste responsable / JRI
                         </label>
                         <div class="relative">
+                            <div class="flex items-stretch gap-2">
+                                <div class="relative min-w-0 flex-1">
                             <button type="button"
                                     @click.stop="jrOpenSelect()"
                                     class="w-full pl-3.5 pr-11 py-2.5 rounded-lg border border-outline/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-left flex items-center gap-2.5 min-h-[48px]"
@@ -923,18 +925,17 @@
                                     </template>
                                 </span>
                                 <span class="absolute right-0 top-0 bottom-0 flex items-center pr-3 gap-1">
-                                    <button type="button" tabindex="-1"
-                                            @click.stop="jrClear();"
-                                            class="text-on-surface-variant/70 hover:text-error transition-colors"
-                                            x-show="selectedJr"
-                                            x-cloak
-                                            title="Retirer l'assignation">
-                                        <i class="fa-solid fa-xmark text-xs"></i>
-                                    </button>
                                     <i class="fa-solid fa-chevron-down text-xs text-on-surface-variant transition-transform flex-shrink-0"
                                        :class="jrDropdownOpen ? 'rotate-180' : ''"></i>
                                 </span>
                             </button>
+                                </div>
+                                <button type="button" x-show="selectedJr" x-cloak @click="jrClear()"
+                                        aria-label="Retirer le journaliste assigné"
+                                        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-error/10 hover:text-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-error">
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
 
                             {{-- Avertissements de disponibilité --}}
                             <div x-show="jrVide && ! selectedJrHorsListe" x-cloak
