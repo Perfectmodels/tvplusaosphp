@@ -24,6 +24,7 @@
         conducteurId: {{ $conducteur->id }},
         csrfToken: @json(csrf_token()),
         canCrudRedac: @json($canCrudRedac),
+        canReorderRedac: @json($canReorder),
         defaultNextPos: {{ $defaultNextPos }},
         typeOptions: @json($typeOptions),
         jrOptions: @json($jrOptions),
@@ -49,8 +50,8 @@
 
     @include('_partials.conducteur-lifecycle', ['conducteur' => $conducteur])
 
-    {{-- HEADER STATS BAR (progression + 3 stats) --}}
-    <header class="bg-white border-b border-outline/10 px-5 py-5 shadow-sm">
+    {{-- Navigation et indicateurs de la rédaction --}}
+    <header class="rounded-2xl border border-outline-variant bg-white px-4 py-5 shadow-sm sm:px-6">
         <div class="max-w-[1800px] mx-auto flex flex-col gap-5">
             <div class="flex flex-wrap justify-between items-start gap-4">
                 <div>
@@ -70,28 +71,21 @@
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <a href="{{ route('conducteurs.redaction.index') }}"
-                       class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-outline/30 rounded-lg hover:bg-surface-container transition-colors text-on-surface">
-                        <i class="fa-solid fa-arrow-left text-xs"></i> Tous conducteurs
+                       class="ui-action ui-action--outline">
+                        <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i> Conducteurs de rédaction
                     </a>
-                    <a href="{{ route('conducteurs.chef_edition', $conducteur) }}"
-                       class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-outline/30 rounded-lg hover:bg-surface-container transition-colors text-on-surface">
-                        <i class="fa-solid fa-pen-to-square text-xs"></i> Timeline Chef Édition
-                    </a>
-                    <a href="{{ route('conducteurs.presentateur.show', $conducteur) }}"
-                       class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-outline/30 rounded-lg hover:bg-surface-container transition-colors text-on-surface">
-                        <i class="fa-solid fa-microphone-lines text-xs"></i> Vue Présentateur
-                    </a>
+                    {{-- Les vues Chef d'édition / Présentateur sont réservées aux conducteurs d'émission. --}}
                     <button type="button"
                             @click="document.dispatchEvent(new CustomEvent('presence:reviser'))"
-                            class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-primary/30 text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                            class="ui-action ui-action--outline">
                         <i class="fa-solid fa-users text-xs"></i>
                         Présences
                         <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-xs font-bold"
                               x-text="presenceTotal + ' / ' + presenceTotalJournalistes">0</span>
                         <span class="text-xs opacity-70 font-normal">présents · Réviser</span>
                     </button>
-                    <button x-show="canCrudRedac" @click="openCreateSujetModal()"
-                            class="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-container transition-colors shadow-sm">
+                    <button type="button" x-show="canCrudRedac" @click="openCreateSujetModal()"
+                            class="ui-action ui-action--primary">
                         <i class="fa-solid fa-plus text-xs"></i> Ajouter un sujet
                     </button>
                 </div>
@@ -120,23 +114,73 @@
                         <p class="text-xs uppercase tracking-widest text-secondary">Progression Workflow</p>
                         <p class="font-bold text-blue-700" x-text="progression + '%'">{{ $progression }}%</p>
                     </div>
-                    <div class="h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full bg-blue-600 rounded-full transition-all duration-500"
-                             :style="{ width: progression + '%' }"></div>
+                    <div class="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high"
+                         role="progressbar" aria-label="Progression globale de la production"
+                         aria-valuemin="0" aria-valuemax="100" :aria-valuenow="Math.max(0, Math.min(100, progression))">
+                        <div class="h-full rounded-full bg-secondary transition-[width] duration-300"
+                             :style="{ width: Math.max(0, Math.min(100, progression)) + '%' }"></div>
                     </div>
                 </div>
             </div>
         </div>
     </header>
 
+    {{-- Recherche, filtres et actualisation, communs aux vues tableau / cartes. --}}
+    <section class="rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5"
+             aria-label="Rechercher et filtrer les sujets">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-primary">Programmation et suivi des sujets</h2>
+                <p class="mt-1 text-sm text-on-surface-variant" role="status" aria-live="polite">
+                    <span x-text="sujetsVisibles.length"></span> sujet(s) affiché(s) sur
+                    <span x-text="sujets.length"></span>
+                    <span x-show="erreurSynchronisation" class="ml-2 font-semibold text-error">· Synchronisation indisponible</span>
+                    <span x-show="!erreurSynchronisation && derniereSynchronisation"
+                          class="ml-2" x-text="'· Actualisé à ' + derniereSynchronisation"></span>
+                </p>
+            </div>
+            <button type="button" class="ui-action ui-action--outline"
+                    @click="actualiserSujets()" :disabled="synchronisationEnCours || isSavingSujet || showModal">
+                <i :class="synchronisationEnCours ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate'"
+                   aria-hidden="true"></i> Actualiser
+            </button>
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,17rem)_auto]">
+            <div>
+                <label for="redaction-sujet-recherche" class="mb-1 block text-xs font-semibold text-on-surface-variant">
+                    Sujet, angle, émission, journaliste
+                </label>
+                <input id="redaction-sujet-recherche" type="search" x-model.debounce.250ms="rechercheSujet"
+                       maxlength="160" class="ui-field" autocomplete="off"
+                       placeholder="Rechercher dans le conducteur…">
+            </div>
+            <div>
+                <label for="redaction-sujet-filtre" class="mb-1 block text-xs font-semibold text-on-surface-variant">Filtre rapide</label>
+                <select id="redaction-sujet-filtre" x-model="filtreSujet" class="ui-field">
+                    <option value="tous">Tous les sujets</option>
+                    <option value="attente">Non livrés</option>
+                    <option value="livres">Livrés</option>
+                    <option value="sans_angle">Angles à renseigner</option>
+                    <option value="sans_jri">Sans journaliste assigné</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="button" class="ui-action ui-action--outline w-full sm:w-auto"
+                        @click="effacerFiltresSujets()"
+                        :disabled="!rechercheSujet && filtreSujet === 'tous'">Effacer</button>
+            </div>
+        </div>
+    </section>
+
     {{-- TABLEAU 15 COLONNES (#COND · #SEQ · Ordre · Sujet · Angle · Émission · Type · JRI · Terrain · Montage · Habillage · Livraison · Livré le · Diffusion · Actions) --}}
     <section class="max-w-[1900px] mx-auto w-full pb-8" data-bulk-list="bulk-sujets-redaction">
         @if($canCrudRedac)
         @include('_partials.bulk-delete-toolbar', ['resource' => 'sujets-redaction', 'parentId' => $conducteur->id])
         @endif
-        <div class="bg-white rounded-2xl border border-outline/10 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm hidden min-[1536px]:table">
+        <div class="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm">
+            <div class="overflow-x-auto" role="region" tabindex="0"
+                 aria-label="Tableau des sujets, défilement horizontal si nécessaire">
+                <table class="hidden min-w-[1550px] w-full border-collapse text-left text-sm min-[1280px]:table">
                     <thead>
                         <tr class="border-b border-outline-variant bg-surface-container sticky top-0 z-20">
                             <th class="p-3.5 text-xs uppercase tracking-wider font-semibold text-on-surface-variant w-14 text-center hidden lg:table-cell">Ordre</th>
@@ -156,25 +200,25 @@
                     </thead>
                     <tbody id="redaction-tbody">
 
-                        <template x-if="sujets.length === 0">
+                        <template x-if="sujetsVisibles.length === 0">
                             <tr>
                                 <td colspan="13" class="p-16 text-center text-secondary italic bg-surface-container-lowest">
-                                    Aucun sujet dans ce conducteur de rédaction.
-                                    <span x-show="canCrudRedac">
-                                        Cliquez sur <span class="font-semibold text-primary">« Ajouter un sujet »</span> pour commencer.
-                                    </span>
+                                    <span x-show="sujets.length === 0">Aucun sujet programmé dans ce conducteur.</span>
+                                    <span x-show="sujets.length > 0">Aucun sujet ne correspond à ces filtres.</span>
+                                    <button type="button" x-show="sujets.length > 0"
+                                            @click="effacerFiltresSujets()" class="ml-2 text-primary underline">Effacer les filtres</button>
                                 </td>
                             </tr>
                         </template>
 
-                        <template x-for="(s, i) in sujets" :key="s.id">
+                        <template x-for="(s, i) in sujetsVisibles" :key="s.id">
                             <tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors group"
                                 :data-sujet-id="s.id"
                                 :data-conducteur-id="s.conducteur_id">
 
                                 <td class="p-3 text-center font-mono font-semibold text-on-surface-variant hidden lg:table-cell"
                                     :title="'Conducteur '+s.code_conducteur+' · Ligne '+s.code_ligne"
-                                    x-text="i+1">1</td>
+                                    x-text="s.position || (i + 1)">1</td>
 
                                 <td class="p-3">
                                     <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm text-primary" @click.stop @mousedown.stop><input type="checkbox" data-bulk-item form="bulk-sujets-redaction" :value="s.id" :disabled="!(s.can_delete_redaction)" :aria-label="'Sélectionner '+ s.title" class="h-5 w-5 rounded border-outline-variant text-primary"><span class="sr-only">Sélectionner</span></label>
@@ -238,16 +282,17 @@
                                 </td>
 
                                 <td class="sticky right-0 bg-white p-3 text-center">
-                                    <div x-show="canCrudRedac" class="flex gap-2 justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                        <button @click="openEditSujetModal(s)"
-                                                title="Modifier le sujet"
-                                                class="text-secondary hover:text-primary transition-colors px-1">
-                                            <i class="fa-regular fa-pen-to-square"></i>
+                                    <div x-show="s.can_edit_redaction || s.can_delete_redaction"
+                                         class="flex items-center justify-center gap-1">
+                                        <button type="button" x-show="s.can_edit_redaction" @click="openEditSujetModal(s)"
+                                                :aria-label="'Modifier ' + s.title" title="Modifier le sujet"
+                                                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-primary hover:bg-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary">
+                                            <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
                                         </button>
-                                        <button @click="confirmDeleteSujet(s)"
-                                                title="Supprimer le sujet"
-                                                class="text-secondary hover:text-error transition-colors px-1">
-                                            <i class="fa-regular fa-trash-can"></i>
+                                        <button type="button" x-show="s.can_delete_redaction" @click="confirmDeleteSujet(s)"
+                                                :aria-label="'Supprimer ' + s.title" title="Supprimer le sujet"
+                                                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-error hover:bg-error/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-error">
+                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -256,15 +301,17 @@
                     </tbody>
                 </table>
             </div>
-            <div id="redaction-cards" class="min-[1536px]:hidden p-3 sm:p-4 space-y-3">
-                <p x-show="sujets.length === 0" class="py-8 text-center text-sm text-on-surface-variant">
-                    Aucun sujet dans ce conducteur de rédaction.
-                </p>
-                <template x-for="(s, i) in sujets" :key="`redaction-card-${s.id}`">
+            <div id="redaction-cards" class="space-y-3 p-3 sm:p-4 min-[1280px]:hidden">
+                <div x-show="sujetsVisibles.length === 0" class="py-8 text-center text-sm text-on-surface-variant" role="status">
+                    <p x-text="sujets.length === 0 ? 'Aucun sujet dans ce conducteur.' : 'Aucun sujet ne correspond aux filtres.'"></p>
+                    <button x-show="sujets.length > 0" type="button" @click="effacerFiltresSujets()"
+                            class="ui-action ui-action--outline mt-3">Effacer les filtres</button>
+                </div>
+                <template x-for="(s, i) in sujetsVisibles" :key="`redaction-card-${s.id}`">
                     <article class="rounded-xl border border-outline/20 bg-white p-4 shadow-sm">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container text-sm font-bold text-on-surface-variant"
-                                  x-text="i + 1"></span>
+                                  x-text="s.position || (i + 1)"></span>
                             <div class="min-w-0 flex-1">
                                 <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm text-primary" @click.stop @mousedown.stop><input type="checkbox" data-bulk-item form="bulk-sujets-redaction" :value="s.id" :disabled="!(s.can_delete_redaction)" :aria-label="'Sélectionner '+ s.title" class="h-5 w-5 rounded border-outline-variant text-primary"><span class="sr-only">Sélectionner</span></label>
                                 <h3 class="font-semibold leading-snug text-on-surface" x-text="s.title_truncated || s.title"></h3>
@@ -275,13 +322,13 @@
                                     <span x-show="s.emission_nom" class="text-xs font-medium text-primary" x-text="s.emission_nom"></span>
                                 </div>
                             </div>
-                            <div x-show="canCrudRedac" class="flex shrink-0 items-center gap-1">
-                                <button type="button" @click="openEditSujetModal(s)"
+                            <div x-show="s.can_edit_redaction || s.can_delete_redaction" class="flex shrink-0 items-center gap-1">
+                                <button type="button" x-show="s.can_edit_redaction" @click="openEditSujetModal(s)"
                                         class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                                         :aria-label="'Modifier ' + s.title" title="Modifier le sujet">
                                     <i class="fa-regular fa-pen-to-square"></i>
                                 </button>
-                                <button type="button" @click="confirmDeleteSujet(s)"
+                                <button type="button" x-show="s.can_delete_redaction" @click="confirmDeleteSujet(s)"
                                         class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-error hover:bg-error/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-error"
                                         :aria-label="'Supprimer ' + s.title" title="Supprimer le sujet">
                                     <i class="fa-regular fa-trash-can"></i>
@@ -739,27 +786,31 @@
     {{-- MODALE CRUD SUJET (Create / Edit 7 champs: Ordre, Durée, Émission, Type, Sujet, Angle, JRI) --}}
     {{-- ========================================================= --}}
     <template x-if="showModal">
-        <div x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        <div x-cloak x-ref="sujetDialog" tabindex="-1"
+             role="dialog" aria-modal="true" aria-labelledby="redaction-modal-title"
+             class="fixed inset-0 z-[100] flex items-center justify-center p-3 focus:outline-none sm:p-4"
              x-transition.opacity.duration.200ms
-             @keydown.escape.window="closeModal()">
+             @keydown.tab="bloquerTabSujet($event)"
+             @keydown.escape.stop.prevent="closeModal()">
             <div class="absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]" @click.self="closeModal()"></div>
-            <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-outline/10 max-h-[92vh] overflow-hidden flex flex-col"
+            <div class="relative flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-2xl"
                  x-transition.scale.origin.center.duration.200ms>
 
                 <header class="px-6 py-5 border-b border-outline/10 bg-white">
                     <div class="flex justify-between items-start gap-4">
                         <div>
-                            <h3 class="text-xl font-bold text-on-surface flex items-center gap-2" x-text="modalTitle">Ajouter un sujet</h3>
+                            <h3 id="redaction-modal-title" class="flex items-center gap-2 text-xl font-bold text-on-surface" x-text="modalTitle">Ajouter un sujet</h3>
                             <p class="text-sm text-on-surface-variant mt-1" x-text="modalSubtitle">Renseignez le sujet, son émission, son angle, le type et le journaliste responsable.</p>
                         </div>
-                        <button @click="closeModal()" class="p-2.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-surface-container text-secondary transition-colors">
+                        <button type="button" @click="closeModal()" aria-label="Fermer le formulaire du sujet"
+                                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
                 </header>
 
-                <div class="p-6 overflow-y-auto space-y-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="space-y-5 overflow-y-auto p-4 sm:p-6" :aria-busy="isSavingSujet ? 'true' : 'false'">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>
                             <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
                                 Ordre dans le conducteur
@@ -825,10 +876,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                        <label for="redaction-form-title" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                             Titre / Sujet <span class="text-error">*</span>
                         </label>
-                        <input type="text" x-model="sujetForm.title" maxlength="500"
+                        <input x-ref="sujetTitle" id="redaction-form-title" type="text" x-model="sujetForm.title" maxlength="500" required
                                placeholder="Ex: Réaction des députés sur la loi immigration"
                                class="w-full px-3.5 py-2.5 rounded-lg border border-outline/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-on-surface">
                     </div>
@@ -847,6 +898,8 @@
                             Journaliste responsable / JRI
                         </label>
                         <div class="relative">
+                            <div class="flex items-stretch gap-2">
+                                <div class="relative min-w-0 flex-1">
                             <button type="button"
                                     @click.stop="jrOpenSelect()"
                                     class="w-full pl-3.5 pr-11 py-2.5 rounded-lg border border-outline/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-left flex items-center gap-2.5 min-h-[48px]"
@@ -872,18 +925,17 @@
                                     </template>
                                 </span>
                                 <span class="absolute right-0 top-0 bottom-0 flex items-center pr-3 gap-1">
-                                    <button type="button" tabindex="-1"
-                                            @click.stop="jrClear();"
-                                            class="text-on-surface-variant/70 hover:text-error transition-colors"
-                                            x-show="selectedJr"
-                                            x-cloak
-                                            title="Retirer l'assignation">
-                                        <i class="fa-solid fa-xmark text-xs"></i>
-                                    </button>
                                     <i class="fa-solid fa-chevron-down text-xs text-on-surface-variant transition-transform flex-shrink-0"
                                        :class="jrDropdownOpen ? 'rotate-180' : ''"></i>
                                 </span>
                             </button>
+                                </div>
+                                <button type="button" x-show="selectedJr" x-cloak @click="jrClear()"
+                                        aria-label="Retirer le journaliste assigné"
+                                        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-outline-variant text-on-surface-variant hover:bg-error/10 hover:text-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-error">
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
 
                             {{-- Avertissements de disponibilité --}}
                             <div x-show="jrVide && ! selectedJrHorsListe" x-cloak
@@ -988,8 +1040,8 @@
                         </div>
                     </div>
 
-                    <div x-show="Object.keys(modalErrs).length > 0"
-                         class="p-4 rounded-lg bg-error-container/20 border border-error-container/50 space-y-1">
+                    <div x-show="Object.keys(modalErrs).length > 0" role="alert" aria-live="assertive"
+                         class="space-y-1 rounded-lg border border-error/30 bg-error-container/20 p-4">
                         <template x-for="msg in Object.values(modalErrs)" :key="msg">
                             <p class="text-sm text-error flex items-start gap-2">
                                 <i class="fa-solid fa-circle-xmark mt-0.5 text-xs"></i>
@@ -999,7 +1051,7 @@
                     </div>
                 </div>
 
-                <footer class="px-6 py-4 border-t border-outline/10 bg-surface-container-lowest flex items-center justify-between gap-3 flex-wrap">
+                <footer class="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant bg-white px-4 py-4 sm:px-6">
                     <p class="text-xs text-on-surface-variant">
                         <i class="fa-solid fa-circle-info text-primary mr-1.5"></i>
                         Les étapes de la production se gèrent directement dans la liste des sujets : cliquez sur un badge pour faire progresser le sujet.
@@ -1010,7 +1062,7 @@
                             Annuler
                         </button>
                         <button type="button" @click="saveSujet()" :disabled="isSavingSujet"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                                class="ui-action ui-action--primary" :aria-busy="isSavingSujet ? 'true' : 'false'">
                             <i x-show="!isSavingSujet" class="fa-solid fa-check"></i>
                             <i x-show="isSavingSujet" class="fa-solid fa-spinner fa-spin"></i>
                             <span x-text="isSavingSujet ? 'Enregistrement…' : modalSubmitLabel">Ajouter le sujet</span>

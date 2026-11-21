@@ -21,12 +21,37 @@
         @endcan
     </div>
     @include('_partials.conducteur-edition-selector')
+    @php
+        $emissionPageItems = ($allDates ?? false) ? $conducteurs->getCollection() : $conducteurs;
+        $emissionSequences = $emissionPageItems->sum(fn ($item) => $item->sequences->count());
+        $emissionDuree = $emissionPageItems->sum(fn ($item) => (int) ($item->total_duration ?? 0));
+        $emissionAvecPresentateur = $emissionPageItems->filter(fn ($item) => $item->presentateur_id !== null)->count();
+    @endphp
+    <div class="mx-auto max-w-[1600px] space-y-5">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Indicateurs des conducteurs d'émission">
+            <div class="ui-panel border-l-4 border-l-primary p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{{ ($allDates ?? false) ? 'Conducteurs trouvés' : 'Conducteurs de la date' }}</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-primary">{{ ($allDates ?? false) ? $conducteurs->total() : $conducteurs->count() }}</p>
+            </div>
+            <div class="ui-panel border-l-4 border-l-secondary p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Séquences affichées</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-on-surface">{{ $emissionSequences }}</p>
+            </div>
+            <div class="ui-panel border-l-4 border-l-secondary p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Durée programmée affichée</p>
+                <p class="mt-2 text-xl font-bold tabular-nums text-primary">{{ \App\Services\ConducteurCalculatorService::formatDuree($emissionDuree) }}</p>
+            </div>
+            <div class="ui-panel border-l-4 border-l-success p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Présentateurs assignés</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-success">{{ $emissionAvecPresentateur }}</p>
+            </div>
+        </div>
 
-    <div class="p-4 md:p-6 max-w-[1400px] mx-auto">
+        <div class="rounded-2xl border border-outline-variant bg-white p-3 sm:p-5">
         @if($conducteurs->count() === 0)
             <x-ui.empty-state icon="fa-tv"
-                title="Aucun conducteur d'émission pour cette date"
-                description="Choisissez une autre date pour consulter les éditions disponibles.">
+                title="{{ ($allDates ?? false) ? 'Aucun conducteur ne correspond à votre recherche' : 'Aucun conducteur d\'émission pour cette date.' }}"
+                description="{{ ($allDates ?? false) ? 'Essayez un autre nom ou réinitialisez les filtres.' : 'Choisissez une autre date pour consulter les éditions disponibles.' }}">
                 @can('create', \App\Models\Conducteur::class)
                     <x-slot:actions>
                         <a href="{{ $createEmissionUrl }}" class="ui-action ui-action--primary">
@@ -65,7 +90,7 @@
                                 <tr class="group transition-colors hover:bg-surface-container-low/60"
                                     data-conducteur-id="{{ $c->id }}"
                                     data-conducteur-code="{{ e($codeC) }}"
-                                    data-conducteur-titre="{{ e($titreConducteur) }}"
+                                    data-conducteur-titre="{{ $titreConducteur }}"
                                     data-conducteur-date="{{ optional($c->date_edition)->format('d/m/Y') }}"
                                     data-conducteur-nb-sujets="{{ $totalSeq }}"
                                     data-url-delete="{{ route('conducteurs.emission.destroy', $c) }}">
@@ -90,7 +115,9 @@
                                     <td class="whitespace-nowrap px-5 py-4 font-mono tabular-nums text-on-surface-variant">{{ $c->total_duration_hm }}</td>
                                     <td class="px-5 py-4">
                                         <div class="flex items-center gap-2">
-                                            <div class="h-2 w-24 overflow-hidden rounded-full bg-surface-container-high">
+                                            <div class="h-2 w-24 overflow-hidden rounded-full bg-surface-container-high"
+                                                 role="progressbar" aria-label="Progression du conducteur {{ $titreConducteur }}"
+                                                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ max(0, min(100, $progression)) }}">
                                                 <div class="h-full rounded-full bg-primary" style="width:{{ $progression }}%"></div>
                                             </div>
                                             <span class="font-mono text-xs font-bold text-blue-700">{{ $progression }} %</span>
@@ -99,12 +126,12 @@
                                     <td class="px-5 py-4 text-right">
                                         <div class="inline-flex items-center gap-2">
                                             <a href="{{ route('conducteurs.emission.show', $c) }}"
-                                               class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-container hover:text-primary">
+                                               class="ui-action ui-action--primary">
                                                 <i class="fa-solid fa-list-check" aria-hidden="true"></i> Ouvrir
                                             </a>
                                             @can('delete', $c)
                                                 <button type="button"
-                                                        class="btn-delete-conducteur inline-flex h-10 w-10 items-center justify-center rounded-lg border border-error/20 text-error transition-colors hover:bg-error hover:text-white"
+                                                        class="btn-delete-conducteur inline-flex h-11 w-11 items-center justify-center rounded-lg border border-error/20 text-error transition-colors hover:bg-error hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-error"
                                                         title="Supprimer ce conducteur et ses séquences" aria-label="Supprimer">
                                                     <i class="fa-solid fa-trash text-xs" aria-hidden="true"></i>
                                                 </button>
@@ -117,12 +144,19 @@
                     </table>
                 </x-ui.table-shell>
             </div>
-            <div class="mt-8">
-                @include('_partials.conducteur-edition-pagination')
+            <div class="mt-6">
+                @if($allDates ?? false)
+                    @include('_partials.conducteur-overview-pagination')
+                @else
+                    @include('_partials.conducteur-edition-pagination')
+                @endif
             </div>
         @endif
+        </div>
     </div>
-@if($conducteurs->isEmpty())<div class="px-4 pb-6">@include('_partials.conducteur-edition-pagination')</div>@endif
+@if($conducteurs->isEmpty() && !($allDates ?? false))
+    <div class="px-4 pb-6">@include('_partials.conducteur-edition-pagination')</div>
+@endif
 @endsection
 
 @push('scripts')

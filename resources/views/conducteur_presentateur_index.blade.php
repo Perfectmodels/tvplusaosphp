@@ -125,10 +125,16 @@
                 @endforeach
             </div>
             <div class="mt-8">
-                @include('_partials.conducteur-edition-pagination')
+                @if($allDates ?? false)
+                    @include('_partials.conducteur-overview-pagination')
+                @else
+                    @include('_partials.conducteur-edition-pagination')
+                @endif
             </div>
         @endif
     </div>
-@if($conducteurs->isEmpty())<div class="px-4 pb-6">@include('_partials.conducteur-edition-pagination')</div>@endif
+@if($conducteurs->isEmpty() && !($allDates ?? false))
+    <div class="px-4 pb-6">@include('_partials.conducteur-edition-pagination')</div>
+@endif
 @endsection
 

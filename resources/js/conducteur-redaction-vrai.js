@@ -29,6 +29,13 @@ export default function conducteurRedactionVrai() {
         jrDropdownOpen: false,
         progression: 0,
         sujets: [],
+        rechercheSujet: '',
+        filtreSujet: 'tous',
+        synchronisationEnCours: false,
+        erreurSynchronisation: false,
+        derniereSynchronisation: '',
+        _modalInitialForm: null,
+        _modalReturnFocus: null,
 
         showModal: false,
         modalMode: 'create',
@@ -71,6 +78,7 @@ export default function conducteurRedactionVrai() {
             this.csrfToken = cfg.csrfToken || '';
             this.routes = Object.assign(this.routes, cfg.routes || {});
             this.canCrudRedac = !!cfg.canCrudRedac;
+            this.canReorderRedac = !!cfg.canReorderRedac;
             this.defaultNextPos = (cfg.defaultNextPos && +cfg.defaultNextPos > 0) ? +cfg.defaultNextPos : 1;
             this.typeOptions = Array.isArray(cfg.typeOptions) && cfg.typeOptions.length ? cfg.typeOptions : [
                 { value: 'Sujet', label: 'Sujet' },
@@ -105,6 +113,36 @@ export default function conducteurRedactionVrai() {
             this.subscribeToLiveUpdates();
         },
 
+        // ============== RECHERCHE & FILTRES ==============
+        get sujetsVisibles() {
+            const normalize = value => String(value || '')
+                .replace(/<[^>]*>/g, ' ')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLocaleLowerCase('fr').trim();
+            const search = normalize(this.rechercheSujet);
+            return this.sujets.filter(s => {
+                if (search && ![
+                    s.title, s.angle_editorial, s.emission_nom, s.journaliste_nom, s.code_ligne,
+                ].some(field => normalize(field).includes(search))) return false;
+
+                switch (this.filtreSujet) {
+                    case 'livres': return !!s.livre_at_hm;
+                    case 'attente': return !s.livre_at_hm;
+                    case 'sans_angle': return !String(s.angle_editorial || '').trim();
+                    case 'sans_jri': return !s.journaliste_responsable_id;
+                    default: return true;
+                }
+            });
+        },
+        effacerFiltresSujets() {
+            this.rechercheSujet = '';
+            this.filtreSujet = 'tous';
+        },
+        async actualiserSujets() {
+            const ok = await this.refreshLiveState();
+            this.toast(ok ? 'Les sujets du conducteur sont à jour.' : 'Actualisation impossible. Réessayez.', ok ? 'success' : 'error');
+        },
+
         // ============== HELPERS ==============
         destroy() {
             if (this._liveRefreshTimer) clearTimeout(this._liveRefreshTimer);
@@ -130,7 +168,7 @@ export default function conducteurRedactionVrai() {
                         this._liveRefreshTimer = setTimeout(() => this.refreshLiveState(), 300);
                     });
             }
-        }
+        },
         filteredEmissionOptions() {
             const query = String(this.emissionSearch || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
             return this.emissionOptions.filter((emission) => {
@@ -139,20 +177,29 @@ export default function conducteurRedactionVrai() {
             });
         },
         async refreshLiveState() {
-            if (!this.routes.liveState) return false;
+            if (!this.routes.liveState || this.synchronisationEnCours || this.isSavingSujet || this.showModal) return false;
+            this.synchronisationEnCours = true;
             try {
                 const response = await fetch(this.routes.liveState, {
-                    headers: { Accept: 'application/json' },
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                     credentials: 'same-origin',
+                    cache: 'no-store',
                 });
                 if (!response.ok) throw new Error(`Actualisation impossible (${response.status}).`);
                 const snapshot = await response.json();
-                this.sujets = Array.isArray(snapshot.sujets) ? snapshot.sujets : [];
+                if (!Array.isArray(snapshot.sujets)) throw new Error('Réponse du conducteur incomplète.');
+                this.sujets = snapshot.sujets;
                 this.progression = Number.isFinite(+snapshot.progression) ? +snapshot.progression : this.progression;
+                this.defaultNextPos = this.sujets.length + 1;
+                this.erreurSynchronisation = false;
+                this.derniereSynchronisation = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
                 return true;
             } catch (error) {
+                this.erreurSynchronisation = true;
                 console.error('[redaction realtime]', error);
                 return false;
+            } finally {
+                this.synchronisationEnCours = false;
             }
         },
         get jrFiltered() {
@@ -343,11 +390,17 @@ export default function conducteurRedactionVrai() {
         openCreateSujetModal() {
             if (!this.canCrudRedac) { this.toast('Vous n\'avez pas les droits pour ajouter un sujet.', 'error'); return; }
             this._resetSujetForm('create');
+            this._modalReturnFocus = document.activeElement;
+            this._modalInitialForm = JSON.stringify(this.sujetForm);
             this.showModal = true;
+            this.$nextTick(() => this.$refs.sujetTitle?.focus());
         },
         openEditSujetModal(s) {
-            if (!this.canCrudRedac) { this.toast('Vous n\'avez pas les droits pour modifier ce sujet.', 'error'); return; }
-            if (!s) return;
+            if (!s || !s.can_edit_redaction) {
+                this.toast('Modification non autorisée pour ce sujet.', 'error');
+                return;
+            }
+            this._modalReturnFocus = document.activeElement;
             this._resetSujetForm('edit');
             this.editingId = +s.id;
             const dur = Number.isFinite(+s.duration_seconds) ? Math.max(0, +s.duration_seconds) : 120;
@@ -366,15 +419,41 @@ export default function conducteurRedactionVrai() {
                 : '';
             this.jrSearch = jrLabel;
             this.jrDropdownOpen = false;
+            this._modalInitialForm = JSON.stringify(this.sujetForm);
             this.showModal = true;
+            this.$nextTick(() => this.$refs.sujetTitle?.focus());
         },
-        closeModal() {
+        bloquerTabSujet(event) {
+            const dialog = this.$refs.sujetDialog;
+            if (!dialog || !this.showModal) return;
+            const items = Array.from(dialog.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => el.getClientRects().length > 0);
+            if (!items.length) { event.preventDefault(); dialog.focus(); return; }
+            const first = items[0], last = items[items.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+                event.preventDefault(); first.focus();
+            }
+        },
+        closeModal(force = false) {
+            if (!this.showModal) return;
+            if (this.isSavingSujet && !force) return;
+            if (!force && this._modalInitialForm
+                && JSON.stringify(this.sujetForm) !== this._modalInitialForm
+                && !window.confirm('Abandonner les modifications non enregistrées ?')) return;
             this.showModal = false;
             this.jrDropdownOpen = false;
             this.jrSearch = '';
             this.emissionSearch = '';
-            if (this._toastT) clearTimeout(this._toastT);
-            setTimeout(() => { this.modalErrs = {}; this.isSavingSujet = false; }, 250);
+            this._modalInitialForm = null;
+            this.modalErrs = {};
+            const previous = this._modalReturnFocus;
+            this._modalReturnFocus = null;
+            this.$nextTick(() => {
+                if (previous?.isConnected) previous.focus({ preventScroll: true });
+            });
         },
         _validateSujetForm() {
             const errs = {};
@@ -383,13 +462,26 @@ export default function conducteurRedactionVrai() {
             else if (t.length < 3) errs.title = 'Le titre est trop court (3 caractères minimum).';
             if (!this.sujetForm.type_value) errs.type_value = 'Type de sujet obligatoire (SUJET, REPORTAGE, etc).';
             const dur = ((+this.sujetForm.dureeMinutes || 0) * 60) + ((+this.sujetForm.dureeSecondes || 0) * 1);
-            if (!Number.isFinite(+this.sujetForm.position) || +this.sujetForm.position < 1) errs.position = 'Position doit être ≥ 1.';
-            if (dur < 0) errs.dureeMinutes = 'Durée invalide.';
+            if (!Number.isInteger(+this.sujetForm.position) || +this.sujetForm.position < 1
+                || +this.sujetForm.position > this.sujets.length + (this.modalMode === 'edit' ? 0 : 1)) {
+                errs.position = 'Position invalide dans ce conducteur.';
+            }
+            const min = +this.sujetForm.dureeMinutes, sec = +this.sujetForm.dureeSecondes;
+            if (!Number.isInteger(min) || min < 0 || min > 600
+                || !Number.isInteger(sec) || sec < 0 || sec > 59 || dur < 1 || dur > 36000) {
+                errs.dureeMinutes = 'Durée comprise entre 1 seconde et 600 minutes.';
+            }
             this.modalErrs = errs;
             return Object.keys(errs).length === 0;
         },
         async saveSujet() {
-            if (!this.canCrudRedac) { this.toast('Accès refusé.', 'error'); return; }
+            if (this.modalMode === 'create' && !this.canCrudRedac) {
+                this.toast('Création non autorisée.', 'error'); return;
+            }
+            if (this.modalMode === 'edit'
+                && !this.sujets.some(s => +s.id === +this.editingId && s.can_edit_redaction)) {
+                this.toast('Modification non autorisée.', 'error'); return;
+            }
             if (!this._validateSujetForm()) return;
             this.isSavingSujet = true;
 
@@ -455,7 +547,8 @@ export default function conducteurRedactionVrai() {
                     this.toast(`Sujet "${seq.title || ''}" ajouté au conducteur.`, 'success');
                 }
                 this.isSavingSujet = false;
-                this.closeModal();
+                this.closeModal(true);
+                await this.refreshLiveState();
             } catch (err) {
                 console.error('[redaction save sujet]', err);
                 this.isSavingSujet = false;
@@ -463,7 +556,9 @@ export default function conducteurRedactionVrai() {
             }
         },
         async confirmDeleteSujet(s) {
-            if (!this.canCrudRedac) { this.toast('Vous n\'avez pas les droits pour supprimer ce sujet.', 'error'); return; }
+            if (!s?.can_delete_redaction) {
+                this.toast('Suppression non autorisée pour ce sujet.', 'error'); return;
+            }
             if (!s) return;
             const label = s.title ? `"${s.title}"` : 'ce sujet';
             const confirmation = window.TvAlert?.confirmDelete

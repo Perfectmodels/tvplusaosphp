@@ -675,6 +675,7 @@ final class ConducteurRedactionVraiController extends Controller
             'statut_livraison_btn' => $s->workflowBtnHtml('statut_livraison', $cliqLivraison),
             'statut_diffusion_btn' => $s->workflowBtnHtml('statut_diffusion', $cliqDiffusion),
             'shared_dossier_url' => ($dossier = ($s->sujetEditorial?->sharedDossier ?? $s->sharedDossier)) && $user?->can('view', $dossier) ? route('workspace.show', $dossier) : null,
+            'can_edit_redaction' => $user?->can('crudSequenceRedaction', $s) ?? false,
             'can_delete_redaction' => $user?->can('deleteSequenceRedaction', $s) ?? false,
             'can_workflow' => [
                 'statut_terrain' => $cliqTerrain,
