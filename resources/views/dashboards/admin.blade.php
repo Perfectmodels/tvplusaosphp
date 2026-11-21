@@ -1,30 +1,216 @@
 @extends('layouts.app')
+
 @push('styles')
-    @vite(['resources/css/dashboard.css', 'resources/css/workspace.css'])
+    @vite(['resources/css/dashboard.css', 'resources/css/workspace.css', 'resources/css/dashboard-admin.css'])
 @endpush
+
 @php
     $pageTitle = 'Tableau de bord';
-    $pageSubtitle = $roleLabel.' · Supervision globale : veille, production, rédactions, émissions et administration';
+    $pageSubtitle = $roleLabel.' · Supervision des équipes, de la production et des publications';
     $headerActions = null;
-    $tableauDeBordChiffres = collect($tableauDeBordChiffres ?? []);
-    $heroStats = collect($kpis)->take(4)
-        ->map(fn ($kpi) => ['label' => $kpi['label'], 'value' => $kpi['value'], 'icon' => $kpi['icon']])
-        ->all();
-    if ($tableauDeBordChiffres->has('inscriptions_attente')) {
-        $heroStats[] = ['label' => 'Inscriptions en attente', 'value' => $tableauDeBordChiffres->get('inscriptions_attente'), 'icon' => 'person_add'];
-    }
-    if ($tableauDeBordChiffres->has('comptes_actifs')) {
-        $heroStats[] = ['label' => 'Comptes actifs', 'value' => $tableauDeBordChiffres->get('comptes_actifs').' / '.$tableauDeBordChiffres->get('comptes_total'), 'icon' => 'manage_accounts'];
-    }
-    if ($tableauDeBordChiffres->has('conducteurs_du_jour')) {
-        $heroStats[] = ['label' => 'Conducteurs du jour', 'value' => $tableauDeBordChiffres->get('conducteurs_du_jour'), 'icon' => 'event_available'];
-    }
 @endphp
+
 @section('content')
-<div class="ed-dashboard-content ed-role-dashboard">
+<div class="ed-dashboard-content tvos-admin-dashboard">
     @include('_partials.workspace-toolbar')
-    @include('_partials.dashboard-hero', ['heroTitle' => 'Indicateurs de supervision'])
-    @include('_partials.dashboard-role-extras')
-    @include('_partials.dashboard-role-body')
+
+    @if(!isset($adminAnalytics))
+        <section class="ed-card">
+            <div class="ed-card-heading"><h2>Accès aux indicateurs</h2></div>
+            <p>Les autorisations de lecture nécessaires à la supervision ne sont pas toutes activées pour votre compte.</p>
+        </section>
+    @else
+        <div class="tvos-admin-heading">
+            <div>
+                <p class="tvos-admin-eyebrow">Centre de supervision</p>
+                <h2>Vue d’ensemble</h2>
+                <p>Suivez les indicateurs clés, les activités et les décisions à prendre.</p>
+            </div>
+            <div class="tvos-admin-heading-meta">
+                <span class="tvos-admin-period"><span class="material-symbols-outlined" aria-hidden="true">date_range</span>{{ $adminAnalytics['periodLabel'] }}</span>
+                <a href="{{ request()->fullUrl() }}" class="tvos-admin-refresh" aria-label="Actualiser les indicateurs"><span class="material-symbols-outlined" aria-hidden="true">refresh</span>Actualiser</a>
+            </div>
+        </div>
+
+        <section class="tvos-admin-metrics" aria-label="Indicateurs de supervision">
+            @foreach($adminAnalytics['cards'] as $card)
+                <a class="tvos-admin-metric {{ $card['label'] === 'Retards' && $card['value'] > 0 ? 'tvos-admin-metric--warning' : '' }}" href="{{ $card['href'] }}">
+                    <span class="tvos-admin-metric-icon"><span class="material-symbols-outlined" aria-hidden="true">{{ $card['icon'] }}</span></span>
+                    <span class="tvos-admin-metric-label">{{ $card['label'] }}</span>
+                    <strong>{{ number_format($card['value'], 0, ',', ' ') }}</strong>
+                    <span class="tvos-admin-metric-footer">
+                        <span>{{ $card['subtitle'] }}</span>
+                        @if($card['delta'] !== null)
+                            <span class="tvos-admin-delta" title="Comparaison avec la période précédente de même durée">
+                                {{ $card['delta'] > 0 ? '+' : '' }}{{ $card['delta'] }} vs précédent
+                            </span>
+                        @endif
+                    </span>
+                </a>
+            @endforeach
+        </section>
+
+        @if($adminAnalytics['sourcesErrors'] > 0)
+            <div class="tvos-admin-warning" role="status">
+                <span class="material-symbols-outlined" aria-hidden="true">error_outline</span>
+                <span>{{ $adminAnalytics['sourcesErrors'] }} source(s) de veille active(s) signalent une erreur. Ce compteur est global, indépendamment des filtres.</span>
+                <a href="{{ route('veille.sources') }}">Examiner les sources</a>
+            </div>
+        @endif
+
+        @include('_partials.dashboard-conference-pointage')
+        @include('_partials.shared-workspace-summary')
+
+        <div class="tvos-admin-charts">
+            <section class="ed-card tvos-admin-panel tvos-admin-panel--wide" aria-labelledby="tvos-trends-title">
+                <div class="tvos-admin-panel-header">
+                    <div>
+                        <h3 id="tvos-trends-title">Évolution de l’activité</h3>
+                        <p>{{ $adminAnalytics['trendLabel'] }} · Comptages quotidiens</p>
+                    </div>
+                    <div class="tvos-admin-legend" aria-hidden="true">
+                        <span><i class="tvos-admin-dot tvos-admin-dot--blue"></i>Conducteurs</span>
+                        <span><i class="tvos-admin-dot tvos-admin-dot--green"></i>Publications</span>
+                    </div>
+                </div>
+                <div class="tvos-admin-chart-scroll" role="region" aria-label="Histogramme de l’activité quotidienne" tabindex="0">
+                    <div class="tvos-admin-trend-chart">
+                        @foreach($adminAnalytics['trend'] as $day)
+                            @php
+                                $pHeight = $adminAnalytics['trendMax'] ? 100 * $day['production'] / $adminAnalytics['trendMax'] : 0;
+                                $dHeight = $adminAnalytics['trendMax'] ? 100 * $day['published'] / $adminAnalytics['trendMax'] : 0;
+                            @endphp
+                            <div class="tvos-admin-trend-day">
+                                <div class="tvos-admin-trend-bars">
+                                    <div class="tvos-admin-trend-bar tvos-admin-trend-bar--blue" style="height: {{ $pHeight }}%" title="{{ $day['production'] }} conducteurs le {{ $day['date'] }}"><span class="sr-only">{{ $day['production'] }} conducteurs</span></div>
+                                    <div class="tvos-admin-trend-bar tvos-admin-trend-bar--green" style="height: {{ $dHeight }}%" title="{{ $day['published'] }} publications le {{ $day['date'] }}"><span class="sr-only">{{ $day['published'] }} publications</span></div>
+                                </div>
+                                <span class="tvos-admin-trend-label">{{ $day['label'] }}</span>
+                                <span class="sr-only">{{ $day['date'] }} : {{ $day['production'] }} conducteurs, {{ $day['published'] }} publications.</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <p class="tvos-admin-chart-note">Les publications comptées ont le statut « Publié » et une date de publication enregistrée. Les deux séries utilisent la même période graphique.</p>
+            </section>
+
+            @php
+                $totalStatuts = $adminAnalytics['statutsTotal'];
+                $positionStatuts = 0;
+                $segmentsStatuts = [];
+                foreach ($adminAnalytics['statuts'] as $statut) {
+                    if ($statut['total'] < 1) continue;
+                    $debut = $totalStatuts ? $positionStatuts * 100 / $totalStatuts : 0;
+                    $positionStatuts += $statut['total'];
+                    $fin = $totalStatuts ? $positionStatuts * 100 / $totalStatuts : 0;
+                    $segmentsStatuts[] = $statut['color'].' '.$debut.'% '.$fin.'%';
+                }
+            @endphp
+            <section class="ed-card tvos-admin-panel" aria-labelledby="tvos-status-title">
+                <div class="tvos-admin-panel-header">
+                    <div>
+                        <h3 id="tvos-status-title">Statuts des contenus</h3>
+                        <p>Contenus numériques créés dans la période</p>
+                    </div>
+                </div>
+                @if($totalStatuts > 0)
+                    <div class="tvos-admin-status-summary">
+                        <div class="tvos-admin-donut" role="img" aria-label="{{ $totalStatuts }} contenus répartis par statut" style="background: conic-gradient({{ implode(', ', $segmentsStatuts) }})">
+                            <div><strong>{{ $totalStatuts }}</strong><small>Contenus</small></div>
+                        </div>
+                        <div class="tvos-admin-status-legend">
+                            @foreach($adminAnalytics['statuts'] as $statut)
+                                <div><span class="tvos-admin-dot" style="background: {{ $statut['color'] }}"></span><span>{{ $statut['label'] }}</span><strong>{{ $statut['total'] }}</strong></div>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div class="tvos-admin-empty">Aucun contenu numérique créé sur cette période.</div>
+                @endif
+            </section>
+        </div>
+
+        <div class="tvos-admin-columns">
+            <section class="ed-card tvos-admin-panel" aria-labelledby="tvos-emissions-title">
+                <div class="tvos-admin-panel-header">
+                    <div>
+                        <h3 id="tvos-emissions-title">Productions par émission</h3>
+                        <p>Classement par nombre de conducteurs</p>
+                    </div>
+                    <a href="{{ route('emissions.index') }}">Toutes les émissions</a>
+                </div>
+                @forelse($adminAnalytics['emissions'] as $emission)
+                    <div class="tvos-admin-ranking-row">
+                        <div class="tvos-admin-ranking-heading"><span>{{ $emission['name'] }}</span><strong>{{ $emission['total'] }}</strong></div>
+                        <div class="tvos-admin-ranking-track"><div style="width: {{ 100 * $emission['total'] / $adminAnalytics['emissionMax'] }}%"></div></div>
+                    </div>
+                @empty
+                    <div class="tvos-admin-empty">Aucun conducteur pour ces critères.</div>
+                @endforelse
+            </section>
+
+            <section class="ed-card tvos-admin-panel" aria-labelledby="tvos-published-title">
+                <div class="tvos-admin-panel-header">
+                    <div>
+                        <h3 id="tvos-published-title">Dernières publications</h3>
+                        <p>Contenus publiés et auteurs identifiés</p>
+                    </div>
+                    <a href="{{ route('digital.index') }}">Ouvrir Digital</a>
+                </div>
+                @forelse($adminAnalytics['recentPublications'] as $publication)
+                    <div class="tvos-admin-feed-row">
+                        <span class="material-symbols-outlined tvos-admin-feed-icon" aria-hidden="true">article</span>
+                        <div>
+                            <strong>{{ $publication['title'] }}</strong>
+                            <p>{{ $publication['author'] }} · {{ $publication['platform'] }}</p>
+                        </div>
+                        <time>{{ $publication['date'] }}</time>
+                    </div>
+                @empty
+                    <div class="tvos-admin-empty">Aucune publication enregistrée sur cette période.</div>
+                @endforelse
+            </section>
+        </div>
+
+        <div class="tvos-admin-columns">
+            <section class="ed-card tvos-admin-panel" aria-labelledby="tvos-activity-title">
+                <div class="tvos-admin-panel-header">
+                    <div>
+                        <h3 id="tvos-activity-title">Activité de l’équipe</h3>
+                        <p>Dernières opérations enregistrées</p>
+                    </div>
+                    <a href="{{ route('admin.activity-logs') }}">Journal complet</a>
+                </div>
+                @forelse($adminAnalytics['activity'] as $event)
+                    <div class="tvos-admin-feed-row">
+                        <span class="material-symbols-outlined tvos-admin-feed-icon" aria-hidden="true">person</span>
+                        <div>
+                            <strong>{{ $event['author'] }}</strong>
+                            <p>{{ $event['event'] }}</p>
+                        </div>
+                        <time>{{ $event['date'] }}</time>
+                    </div>
+                @empty
+                    <div class="tvos-admin-empty">Aucune opération enregistrée pour ces critères.</div>
+                @endforelse
+            </section>
+            <div class="tvos-admin-actions-column">
+                @include('_partials.workspace-list', ['listTitle' => 'Décisions et priorités', 'listId' => 'workspace-priorities', 'listItems' => $priorities, 'listEmpty' => 'Aucune priorité à traiter.'])
+                @include('_partials.workspace-actions')
+            </div>
+        </div>
+
+        @include('_partials.dashboard-role-extras')
+
+        <details class="tvos-admin-more">
+            <summary><span class="material-symbols-outlined" aria-hidden="true">view_module</span>Explorer les listes détaillées des modules<span class="material-symbols-outlined" aria-hidden="true">expand_more</span></summary>
+            <div class="tvos-admin-more-grid">
+                @foreach($sections as $section)
+                    @include('_partials.workspace-list', ['listTitle' => $section['title'], 'listItems' => $section['items'], 'listEmpty' => $section['empty'], 'listId' => null])
+                @endforeach
+            </div>
+        </details>
+        <p class="tvos-admin-chart-note">Comparaison des KPI avec la période précédente : {{ $adminAnalytics['periodComparison'] }}. Les compteurs de stock (veille et utilisateurs) ne sont pas filtrés par date. Les métriques et les listes détaillées conservent leurs définitions propres.</p>
+    @endif
 </div>
 @endsection
