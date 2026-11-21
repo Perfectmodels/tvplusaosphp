@@ -465,7 +465,8 @@
                                  class="absolute z-30 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-outline bg-white shadow-lg">
                                 @foreach($intervenants as $int)
                                     <button type="button"
-                                            x-show="intervenantCorrespond('{{ addslashes(strtolower($int->nomComplet.' '.($int->fonction ?? ''))) }}', inviteSearch)"
+                                             x-show="intervenantCorrespond($el.dataset.search || '', inviteSearch)"
+                                             data-search="{{ mb_strtolower($int->nomComplet.' '.($int->fonction ?? '')) }}"
                                             @click="inviteSelection = '{{ $int->id }}'; ajouterInvite();"
                                             :disabled="formSeq.intervenant_ids.includes({{ $int->id }})"
                                             class="w-full text-left px-3 py-2 hover:bg-surface-container transition-colors flex items-center justify-between gap-2 border-b border-outline/10 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed">
