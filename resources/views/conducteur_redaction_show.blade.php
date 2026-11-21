@@ -177,9 +177,10 @@
         @if($canCrudRedac)
         @include('_partials.bulk-delete-toolbar', ['resource' => 'sujets-redaction', 'parentId' => $conducteur->id])
         @endif
-        <div class="bg-white rounded-2xl border border-outline/10 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm hidden min-[1536px]:table">
+        <div class="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm">
+            <div class="overflow-x-auto" role="region" tabindex="0"
+                 aria-label="Tableau des sujets, défilement horizontal si nécessaire">
+                <table class="hidden min-w-[1550px] w-full border-collapse text-left text-sm min-[1280px]:table">
                     <thead>
                         <tr class="border-b border-outline-variant bg-surface-container sticky top-0 z-20">
                             <th class="p-3.5 text-xs uppercase tracking-wider font-semibold text-on-surface-variant w-14 text-center hidden lg:table-cell">Ordre</th>
@@ -199,25 +200,25 @@
                     </thead>
                     <tbody id="redaction-tbody">
 
-                        <template x-if="sujets.length === 0">
+                        <template x-if="sujetsVisibles.length === 0">
                             <tr>
                                 <td colspan="13" class="p-16 text-center text-secondary italic bg-surface-container-lowest">
-                                    Aucun sujet dans ce conducteur de rédaction.
-                                    <span x-show="canCrudRedac">
-                                        Cliquez sur <span class="font-semibold text-primary">« Ajouter un sujet »</span> pour commencer.
-                                    </span>
+                                    <span x-show="sujets.length === 0">Aucun sujet programmé dans ce conducteur.</span>
+                                    <span x-show="sujets.length > 0">Aucun sujet ne correspond à ces filtres.</span>
+                                    <button type="button" x-show="sujets.length > 0"
+                                            @click="effacerFiltresSujets()" class="ml-2 text-primary underline">Effacer les filtres</button>
                                 </td>
                             </tr>
                         </template>
 
-                        <template x-for="(s, i) in sujets" :key="s.id">
+                        <template x-for="(s, i) in sujetsVisibles" :key="s.id">
                             <tr class="border-b border-outline-variant hover:bg-surface-container-low transition-colors group"
                                 :data-sujet-id="s.id"
                                 :data-conducteur-id="s.conducteur_id">
 
                                 <td class="p-3 text-center font-mono font-semibold text-on-surface-variant hidden lg:table-cell"
                                     :title="'Conducteur '+s.code_conducteur+' · Ligne '+s.code_ligne"
-                                    x-text="i+1">1</td>
+                                    x-text="s.position || (i + 1)">1</td>
 
                                 <td class="p-3">
                                     <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm text-primary" @click.stop @mousedown.stop><input type="checkbox" data-bulk-item form="bulk-sujets-redaction" :value="s.id" :disabled="!(s.can_delete_redaction)" :aria-label="'Sélectionner '+ s.title" class="h-5 w-5 rounded border-outline-variant text-primary"><span class="sr-only">Sélectionner</span></label>
@@ -281,16 +282,17 @@
                                 </td>
 
                                 <td class="sticky right-0 bg-white p-3 text-center">
-                                    <div x-show="canCrudRedac" class="flex gap-2 justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                        <button @click="openEditSujetModal(s)"
-                                                title="Modifier le sujet"
-                                                class="text-secondary hover:text-primary transition-colors px-1">
-                                            <i class="fa-regular fa-pen-to-square"></i>
+                                    <div x-show="s.can_edit_redaction || s.can_delete_redaction"
+                                         class="flex items-center justify-center gap-1">
+                                        <button type="button" x-show="s.can_edit_redaction" @click="openEditSujetModal(s)"
+                                                :aria-label="'Modifier ' + s.title" title="Modifier le sujet"
+                                                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-primary hover:bg-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary">
+                                            <i class="fa-regular fa-pen-to-square" aria-hidden="true"></i>
                                         </button>
-                                        <button @click="confirmDeleteSujet(s)"
-                                                title="Supprimer le sujet"
-                                                class="text-secondary hover:text-error transition-colors px-1">
-                                            <i class="fa-regular fa-trash-can"></i>
+                                        <button type="button" x-show="s.can_delete_redaction" @click="confirmDeleteSujet(s)"
+                                                :aria-label="'Supprimer ' + s.title" title="Supprimer le sujet"
+                                                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-error hover:bg-error/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-error">
+                                            <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                 </td>
