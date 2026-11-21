@@ -21,7 +21,12 @@ function initEmissionForm() {
 
     function go(step) {
         current = Math.max(1, Math.min(4, step));
-        panels.forEach(panel => panel.classList.toggle('hidden', Number(panel.dataset.panel) !== current));
+        panels.forEach(panel => {
+            const visible = Number(panel.dataset.panel) === current;
+            panel.classList.toggle('hidden', !visible);
+            panel.hidden = !visible;
+            panel.setAttribute('aria-hidden', String(!visible));
+        });
         tabs.forEach(tab => {
             const selected = Number(tab.dataset.step) === current;
             tab.setAttribute('aria-selected', String(selected));
@@ -123,12 +128,42 @@ function initEmissionForm() {
         form.querySelectorAll('[data-color]').forEach(item => item.removeAttribute('aria-invalid'));
         form.querySelectorAll('[data-color]').forEach(item => { item.classList.toggle('ring-primary', item === button); item.classList.toggle('ring-slate-200', item !== button); });
     }));
-    previous.addEventListener('click', () => go(current - 1));
-    next.addEventListener('click', () => { addLanguage(); if (validate(panels.find(panel => Number(panel.dataset.panel) === current).querySelectorAll('input,select,textarea'))) { go(current + 1); summary(); } });
-    tabs.forEach(tab => tab.addEventListener('click', () => {
+    previous.addEventListener('click', () => {
+        go(current - 1);
+        panels.find(panel => Number(panel.dataset.panel) === current)?.focus({ preventScroll: true });
+    });
+    next.addEventListener('click', () => {
+        addLanguage();
+        if (validate(panels.find(panel => Number(panel.dataset.panel) === current).querySelectorAll('input,select,textarea'))) {
+            go(current + 1);
+            summary();
+            panels.find(panel => Number(panel.dataset.panel) === current)?.focus({ preventScroll: true });
+        }
+    });
+
+    function activateTab(tab) {
         const target = Number(tab.dataset.step);
-        if (target <= current || validate(panels.filter(panel => Number(panel.dataset.panel) < target).flatMap(panel => [...panel.querySelectorAll('input,select,textarea')]))) { go(target); summary(); }
-    }));
+        if (target > current && !validate(panels
+            .filter(panel => Number(panel.dataset.panel) < target)
+            .flatMap(panel => [...panel.querySelectorAll('input,select,textarea')]))) return false;
+        go(target);
+        summary();
+        return true;
+    }
+
+    tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => activateTab(tab));
+        tab.addEventListener('keydown', event => {
+            let nextIndex;
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+            if (event.key === 'Home') nextIndex = 0;
+            if (event.key === 'End') nextIndex = tabs.length - 1;
+            if (nextIndex === undefined) return;
+            event.preventDefault();
+            if (activateTab(tabs[nextIndex])) tabs[nextIndex].focus();
+        });
+    });
     form.addEventListener('input', () => { updateDuration(); summary(); });
     form.addEventListener('change', () => { updateDuration(); summary(); });
     form.addEventListener('submit', event => { addLanguage(); updateDuration(); if (!validate(form.elements)) event.preventDefault(); });
