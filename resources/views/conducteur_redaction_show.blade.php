@@ -301,15 +301,17 @@
                     </tbody>
                 </table>
             </div>
-            <div id="redaction-cards" class="min-[1536px]:hidden p-3 sm:p-4 space-y-3">
-                <p x-show="sujets.length === 0" class="py-8 text-center text-sm text-on-surface-variant">
-                    Aucun sujet dans ce conducteur de rédaction.
-                </p>
-                <template x-for="(s, i) in sujets" :key="`redaction-card-${s.id}`">
+            <div id="redaction-cards" class="space-y-3 p-3 sm:p-4 min-[1280px]:hidden">
+                <div x-show="sujetsVisibles.length === 0" class="py-8 text-center text-sm text-on-surface-variant" role="status">
+                    <p x-text="sujets.length === 0 ? 'Aucun sujet dans ce conducteur.' : 'Aucun sujet ne correspond aux filtres.'"></p>
+                    <button x-show="sujets.length > 0" type="button" @click="effacerFiltresSujets()"
+                            class="ui-action ui-action--outline mt-3">Effacer les filtres</button>
+                </div>
+                <template x-for="(s, i) in sujetsVisibles" :key="`redaction-card-${s.id}`">
                     <article class="rounded-xl border border-outline/20 bg-white p-4 shadow-sm">
                         <div class="flex items-start gap-3">
                             <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container text-sm font-bold text-on-surface-variant"
-                                  x-text="i + 1"></span>
+                                  x-text="s.position || (i + 1)"></span>
                             <div class="min-w-0 flex-1">
                                 <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm text-primary" @click.stop @mousedown.stop><input type="checkbox" data-bulk-item form="bulk-sujets-redaction" :value="s.id" :disabled="!(s.can_delete_redaction)" :aria-label="'Sélectionner '+ s.title" class="h-5 w-5 rounded border-outline-variant text-primary"><span class="sr-only">Sélectionner</span></label>
                                 <h3 class="font-semibold leading-snug text-on-surface" x-text="s.title_truncated || s.title"></h3>
@@ -320,13 +322,13 @@
                                     <span x-show="s.emission_nom" class="text-xs font-medium text-primary" x-text="s.emission_nom"></span>
                                 </div>
                             </div>
-                            <div x-show="canCrudRedac" class="flex shrink-0 items-center gap-1">
-                                <button type="button" @click="openEditSujetModal(s)"
+                            <div x-show="s.can_edit_redaction || s.can_delete_redaction" class="flex shrink-0 items-center gap-1">
+                                <button type="button" x-show="s.can_edit_redaction" @click="openEditSujetModal(s)"
                                         class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                                         :aria-label="'Modifier ' + s.title" title="Modifier le sujet">
                                     <i class="fa-regular fa-pen-to-square"></i>
                                 </button>
-                                <button type="button" @click="confirmDeleteSujet(s)"
+                                <button type="button" x-show="s.can_delete_redaction" @click="confirmDeleteSujet(s)"
                                         class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-error hover:bg-error/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-error"
                                         :aria-label="'Supprimer ' + s.title" title="Supprimer le sujet">
                                     <i class="fa-regular fa-trash-can"></i>
