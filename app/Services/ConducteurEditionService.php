@@ -22,7 +22,46 @@ class ConducteurEditionService
         $validated = $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
             'page' => ['nullable', 'integer', 'min:1'],
+            'mode' => ['nullable', 'in:all'],
+            'q' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', \Illuminate\Validation\Rule::in(array_column(\App\Enums\StatutConducteurEnum::cases(), 'value'))],
         ]);
+
+        // Vue d'ensemble facultative ; la navigation historique par date reste inchangée.
+        $allDates = ($validated['mode'] ?? null) === 'all';
+        $search = trim((string) ($validated['q'] ?? ''));
+        $status = (string) ($validated['status'] ?? '');
+        if ($allDates) {
+            $filtered = clone $query;
+            if ($search !== '') {
+                $needle = '%'.addcslashes($search, '%_\\').'%';
+                $filtered->where(function (Builder $builder) use ($needle, $search): void {
+                    $builder->where('nom', 'like', $needle)
+                        ->orWhereHas('emission', fn (Builder $emission) => $emission->where('nom', 'like', $needle));
+                    if (ctype_digit($search)) {
+                        $builder->orWhereKey((int) $search);
+                    }
+                });
+            }
+            if ($status !== '') {
+                $filtered->where('status', $status);
+            }
+
+            $conducteurs = $filtered
+                ->with(['emission', 'presentateur', 'sequences'])
+                ->reorder()
+                ->orderByDesc('date_edition')
+                ->orderByDesc('id')
+                ->paginate(12)
+                ->withQueryString();
+
+            $editions = new LengthAwarePaginator([], 0, 1, 1, ['path' => $request->url()]);
+            $dateEdition = null;
+            $sansDateEdition = false;
+            return compact('conducteurs', 'editions', 'dateEdition', 'sansDateEdition', 'editionFilters',
+                'allDates', 'search', 'status');
+        }
+
         $requestedDate = $validated['date'] ?? null;
         $page = (int) ($validated['page'] ?? 1);
 
@@ -55,6 +94,8 @@ class ConducteurEditionService
             ->orderBy('id')
             ->get();
 
-        return compact('conducteurs', 'editions', 'dateEdition', 'sansDateEdition', 'editionFilters');
+        return array_merge(compact('conducteurs', 'editions', 'dateEdition', 'sansDateEdition', 'editionFilters'), [
+            'allDates' => false, 'search' => '', 'status' => '',
+        ]);
     }
 }
