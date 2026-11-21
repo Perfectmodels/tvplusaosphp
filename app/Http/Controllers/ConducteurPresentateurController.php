@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class ConducteurPresentateurController extends Controller
@@ -463,7 +464,7 @@ class ConducteurPresentateurController extends Controller
             'position' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:999'],
             'heure_debut' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
             'heure_fin' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
-            'type' => ['required', 'string'],
+            'type' => ['required', 'string', Rule::enum(TypeSequenceEnum::class)],
             'title' => ['required', 'string', 'max:255'],
             'summary' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'intervenant_ids' => ['sometimes', 'nullable', 'array'],
@@ -572,7 +573,7 @@ class ConducteurPresentateurController extends Controller
             'position' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:999'],
             'heure_debut' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
             'heure_fin' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
-            'type' => ['required', 'string'],
+            'type' => ['required', 'string', Rule::enum(TypeSequenceEnum::class)],
             'title' => ['required', 'string', 'max:255'],
             'summary' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'intervenant_ids' => ['sometimes', 'nullable', 'array'],
