@@ -17,7 +17,7 @@
     </div>
     @include('_partials.conducteur-edition-selector')
     @php
-        $listeConducteurs = $conducteurs->getCollection ? $conducteurs->getCollection() : collect($conducteurs);
+        $listeConducteurs = ($allDates ?? false) ? $conducteurs->getCollection() : $conducteurs;
         $sujetsSurPage = $listeConducteurs->sum(fn ($item) => $item->sequences->count());
         $livresSurPage = $listeConducteurs->sum(fn ($item) => $item->sequences->whereNotNull('livre_at')->count());
         $progressionMoyenne = $listeConducteurs->count() ? (int) round($listeConducteurs->avg(fn ($item) => $item->progression_percent ?? 0)) : 0;
