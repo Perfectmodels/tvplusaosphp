@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\ConducteurEmissionController;
 use App\Http\Controllers\ConducteurExportController;
+use App\Http\Controllers\ConducteurLifecycleController;
 use App\Http\Controllers\ConducteurPresenceController;
 use App\Http\Controllers\ConducteurPresentateurController;
 use App\Http\Controllers\ConducteurRedactionController;
@@ -61,6 +62,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ====================== CONDUCTEURS ======================
     Route::prefix('conducteurs')->name('conducteurs.')->group(function () {
+
+        // Lifecycle validé : conserve les séquences, y compris à l'archivage.
+        Route::patch('/{conducteur}/soumettre', [ConducteurLifecycleController::class, 'soumettre'])->name('lifecycle.soumettre');
+        Route::patch('/{conducteur}/valider', [ConducteurLifecycleController::class, 'valider'])->name('lifecycle.valider');
+        Route::patch('/{conducteur}/cloturer', [ConducteurLifecycleController::class, 'cloturer'])->name('lifecycle.cloturer');
+        Route::patch('/{conducteur}/archiver', [ConducteurLifecycleController::class, 'archiver'])->name('lifecycle.archiver');
+        Route::patch('/{conducteur}/restaurer', [ConducteurLifecycleController::class, 'restaurer'])->name('lifecycle.restaurer');
 
         // ===== CONDUCTEUR ÉMISSION (1 row unique partagé Chef ↔ Présentateur) =====
         Route::get('/emission', [ConducteurEmissionController::class, 'index'])->name('emission.index');

@@ -340,10 +340,23 @@ class Sequence extends Model
         });
 
         static::saved(function (self $seq) {
-            if ($seq->conducteur()->exists()) {
+            // Les notes et les états de production ne changent ni le
+            // minutage ni les positions : éviter un recalcul à chaque frappe.
+            if (! $seq->wasRecentlyCreated && ! $seq->wasChanged([
+                'position', 'duration_seconds', 'masque', 'conducteur_id',
+            ])) {
+                return;
+            }
+            if ($seq->conducteur_id) {
                 try {
-                    ConducteurCalculatorService::recalculerHeures($seq->conducteur()->first());
-                } catch (\Throwable) {
+                    $conducteur = $seq->conducteur()->first();
+                    if ($conducteur) {
+                        ConducteurCalculatorService::recalculerHeures($conducteur);
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Recalcul horaires séquence impossible', [
+                        'sequence_id' => $seq->id, 'error' => $e->getMessage(),
+                    ]);
                 }
             }
         });
@@ -364,7 +377,10 @@ class Sequence extends Model
                     }
                     ConducteurCalculatorService::recalculerHeures($cond);
                 }
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Compactage positions conducteur impossible', [
+                    'sequence_id' => $seq->id, 'error' => $e->getMessage(),
+                ]);
             }
         });
     }

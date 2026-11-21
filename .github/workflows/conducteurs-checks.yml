@@ -13,6 +13,25 @@ on:
       - "resources/views/conducteur_redaction.blade.php"
       - "resources/views/conducteur_redaction_show.blade.php"
       - "tests/Feature/ConducteurSecurityAndOrderingTest.php"
+      - "tests/Feature/ConducteursAuditPhase2Test.php"
+      - "tests/Feature/ParcoursIntervenantTest.php"
+      - "tests/Feature/SondageAdminTest.php"
+      - "app/Policies/ParcoursIntervenantPolicy.php"
+      - "app/Services/ParcoursIntervenantService.php"
+      - "app/Services/ConducteurAntenneService.php"
+      - "app/Http/Controllers/ConducteurLifecycleController.php"
+      - "app/Http/Controllers/SondageAdminController.php"
+      - "app/Http/Controllers/ParcoursIntervenantController.php"
+      - "app/Http/Controllers/ConducteurEmissionController.php"
+      - "app/Models/Conducteur.php"
+      - "app/Models/Sequence.php"
+      - "app/Services/ConducteurCalculatorService.php"
+      - "app/Providers/AppServiceProvider.php"
+      - "resources/views/_partials/conducteur-lifecycle.blade.php"
+      - "resources/views/parcours_intervenants/index.blade.php"
+      - "resources/views/sondage/create.blade.php"
+      - "resources/views/_partials/conducteur-sondage.blade.php"
+      - "routes/module_autres.php"
       - ".github/workflows/conducteurs-checks.yml"
   workflow_dispatch:
 
@@ -47,8 +66,17 @@ jobs:
           php -l app/Http/Controllers/ConducteurRedactionVraiController.php
           php -l app/Http/Controllers/ConducteurPresentateurController.php
           php -l tests/Feature/ConducteurSecurityAndOrderingTest.php
+          php -l tests/Feature/ConducteursAuditPhase2Test.php
+          php -l app/Policies/ParcoursIntervenantPolicy.php
+          php -l app/Services/ParcoursIntervenantService.php
+          php -l app/Services/ConducteurAntenneService.php
+          php -l app/Http/Controllers/ConducteurLifecycleController.php
+          php -l app/Http/Controllers/SondageAdminController.php
+          php -l app/Http/Controllers/ParcoursIntervenantController.php
+          php -l app/Models/Conducteur.php
+          php -l app/Models/Sequence.php
       - name: Run conductor regression tests
-        run: php artisan test --filter='ConducteurSecurityAndOrderingTest|ConducteurRealtimeTest|ConducteurPresentateurReorderTest|SequenceUpdateRedirectChainTest'
+        run: php artisan test --filter='ConducteursAuditPhase2Test|ConducteurSecurityAndOrderingTest|ConducteurRealtimeTest|ConducteurPresentateurReorderTest|SequenceUpdateRedirectChainTest|ParcoursIntervenantTest|SondageAdminTest|ConducteurPresentateurAntenneTest'
       - uses: actions/setup-node@v4
         with:
           node-version: "22"

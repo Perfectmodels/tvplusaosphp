@@ -1,6 +1,8 @@
 <?php
 
 use App\Services\VeilleAutomationService;
+use App\Models\Conducteur;
+use App\Services\ConducteurAntenneService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -10,6 +12,24 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
+
+/**
+ * Surveillance serveur des directs.
+ * Même si tous les navigateurs sont fermés, chaque minute l'horloge de
+ * l'émission est réconciliée depuis les secondes réellement écoulées.
+ * Utilise le cron Laravel schedule:run déjà prévu pour la veille.
+ */
+Schedule::call(static function (): void {
+    Conducteur::query()
+        ->where('type', 'emission')
+        ->whereNotNull('antenne_started_at')
+        ->whereNull('antenne_ended_at')
+        ->chunkById(50, static function ($conducteurs): void {
+            foreach ($conducteurs as $conducteur) {
+                app(ConducteurAntenneService::class)->reconcilier($conducteur);
+            }
+        });
+})->name('conducteurs.antenne.reconcile')->everyMinute()->withoutOverlapping(5);
 
 /*
  |--------------------------------------------------------------------------

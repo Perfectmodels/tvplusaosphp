@@ -148,6 +148,8 @@
         @endcan
     </section>
 
+    @include('_partials.conducteur-lifecycle', ['conducteur' => $conducteur])
+
     {{-- Bulles pop-up : message en cours + messages du public --}}
     @include('_partials.bulles-conducteur')
 

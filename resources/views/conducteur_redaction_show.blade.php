@@ -47,6 +47,8 @@
      @keydown.escape.window="closeModal()"
      class="flex flex-col gap-6 h-full">
 
+    @include('_partials.conducteur-lifecycle', ['conducteur' => $conducteur])
+
     {{-- HEADER STATS BAR (progression + 3 stats) --}}
     <header class="bg-white border-b border-outline/10 px-5 py-5 shadow-sm">
         <div class="max-w-[1800px] mx-auto flex flex-col gap-5">

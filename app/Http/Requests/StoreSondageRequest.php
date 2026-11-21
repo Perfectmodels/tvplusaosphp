@@ -24,6 +24,7 @@ class StoreSondageRequest extends FormRequest
     {
         return [
             'question' => ['required', 'string', 'min:5', 'max:255'],
+            'conducteur_id' => ['sometimes', 'nullable', 'integer', 'exists:conducteurs,id'],
         ];
     }
 

@@ -6,7 +6,7 @@
     $peutGerer = $emission && auth()->user()?->can('create', [\App\Models\Sondage::class, $emission]);
 @endphp
 
-@if(true)
+@if($estDebat)
     <section class="h-full rounded-xl border border-outline/15 bg-white p-5 shadow-sm" aria-label="Sondage du débat">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -30,7 +30,7 @@
                     Modifiez le type de l’émission pour l’activer.
                 </p>
             @elseif($peutGerer)
-                <a href="{{ route('sondages.create', $emission) }}"
+                <a href="{{ route('sondages.create', ['emission' => $emission, 'conducteur_id' => $conducteur->id]) }}"
                    class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-container hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
                     <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i> Créer le sondage
                 </a>
