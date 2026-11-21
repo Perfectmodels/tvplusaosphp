@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\StatutConducteurEnum;
+use App\Events\ConducteurChanged;
 use App\Enums\TypeSequenceEnum;
 use App\Models\Conducteur;
 use App\Models\Emission;
@@ -16,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 final class ConducteurRedactionController extends Controller
@@ -76,6 +78,12 @@ final class ConducteurRedactionController extends Controller
             'interactionMessages' => $interactionMessages,
             'interactionMessagesCount' => $interactionMessagesCount,
         ]);
+    }
+
+    /** État temps réel du conducteur partagé : même contrat que la vue antenne. */
+    public function liveState(Conducteur $conducteur): JsonResponse
+    {
+        return app(ConducteurPresentateurController::class)->liveState($conducteur);
     }
 
     public function store(Request $request): RedirectResponse
@@ -141,24 +149,31 @@ final class ConducteurRedactionController extends Controller
         );
 
         Gate::authorize('reorderSequences', $conducteur);
+        Gate::authorize('view', $conducteur);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
 
         $valid = $request->validate([
             'ordered_ids' => ['required', 'array', 'min:1'],
-            'ordered_ids.*' => ['integer', 'exists:sequences,id'],
+            'ordered_ids.*' => ['required', 'integer', 'distinct', 'exists:sequences,id'],
         ]);
-
-        $position = 1;
-        foreach ($valid['ordered_ids'] as $id) {
-            $seq = $conducteur->sequencesAvecMasques()->find((int) $id);
-            if (! $seq) {
-                continue;
-            }
-            $seq->timestamps = false;
-            $seq->updateQuietly(['position' => $position]);
-            $position++;
+        $orderedIds = array_values(array_map('intval', $valid['ordered_ids']));
+        // The editor only sends visible sequences; preserve masked items after them.
+        $allIds = $conducteur->sequences()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        if (collect($orderedIds)->sort()->values()->all() !== $allIds) {
+            return response()->json(['ok' => false, 'message' => 'Toutes les séquences du conducteur doivent être présentes une seule fois.'], 422);
         }
 
-        ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
+        DB::transaction(function () use ($conducteur, $orderedIds): void {
+            Conducteur::query()->whereKey($conducteur->id)->lockForUpdate()->firstOrFail();
+            $maskedIds = $conducteur->sequencesAvecMasques()->where('masque', true)
+                ->pluck('id')->map(fn ($id) => (int) $id)->all();
+            foreach (array_merge($orderedIds, $maskedIds) as $position => $id) {
+                \App\Models\Sequence::query()->where('conducteur_id', $conducteur->id)
+                    ->whereKey($id)->update(['position' => $position + 1]);
+            }
+            ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
+        });
+        ConducteurChanged::dispatch((int) $conducteur->id);
 
         return response()->json([
             'ok' => true,

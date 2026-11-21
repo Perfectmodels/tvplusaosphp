@@ -1,3 +1,8 @@
+@php
+    $canPilotAntenne = ! $conducteur->date_locked_at && (auth()->user()?->can('piloterAntenne', $conducteur) ?? false);
+    $canEditNotes = ! $conducteur->date_locked_at && $sequences->isNotEmpty()
+        && (auth()->user()?->can('updateNotesPresentateur', $sequences->first()) ?? false);
+@endphp
 <section class="h-full rounded-xl border border-outline/15 bg-white p-5 shadow-sm"
          x-data="chefAntennePanel()"
          x-init='initialize({
@@ -17,7 +22,12 @@
                 <i class="fa-solid fa-satellite-dish text-primary" aria-hidden="true"></i>
                 Antenne & notes présentateur
             </h3>
-            <p class="mt-0.5 text-xs text-on-surface-variant">Pilotez le chrono et préparez les notes sans quitter les actions admin.</p>
+            <p class="mt-0.5 text-xs text-on-surface-variant">Chronomètre, séquences et notes sur une seule interface.</p>
+            <p class="mt-1 text-xs" role="status" aria-live="polite"
+               :class="syncState === 'connected' ? 'text-green-700' : (syncState === 'offline' ? 'text-red-700' : 'text-on-surface-variant')">
+                <i class="fa-solid fa-circle text-[8px] mr-1" aria-hidden="true"></i>
+                <span x-text="syncState === 'connected' ? 'Synchronisé · ' + lastSyncAt : (syncState === 'offline' ? 'Connexion instable · réessai automatique' : 'Connexion en cours…')"></span>
+            </p>
         </div>
         <button type="button" @click="refresh()" :disabled="busy"
                 class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline/30 bg-white px-3 py-2 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
@@ -46,6 +56,7 @@
                 <span x-show="terminee()" class="font-bold uppercase tracking-wider text-green-700">Terminé</span>
                 <span x-show="!enMarche() && elapsedSec === 0 && !terminee()" class="italic text-on-surface-variant">Prêt</span>
             </div>
+            @if($canPilotAntenne)
             <div class="mt-3 flex flex-wrap gap-2">
                 <button type="button" @click="control('start')" :disabled="busy || enMarche()"
                         class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-primary-container hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
@@ -60,6 +71,10 @@
                     <i class="fa-solid fa-rotate-left text-xs" aria-hidden="true"></i> Reset
                 </button>
             </div>
+            @else
+                <p class="mt-3 text-xs text-on-surface-variant">Pilotage réservé aux utilisateurs autorisés. Le suivi reste consultable.</p>
+            @endif
+            <p x-show="controlError" x-cloak class="mt-2 text-xs text-red-700" role="alert" x-text="controlError"></p>
             <template x-if="courante()">
                 <p class="mt-3 rounded-md bg-white px-2.5 py-2 text-xs text-on-surface-variant">
                     À l'antenne : séquence <span class="font-bold text-primary" x-text="'#' + courante().position"></span>
@@ -82,6 +97,7 @@
             <label for="chef-notes-presentateur" class="mb-1 mt-3 block whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Notes présentateur</label>
             <textarea id="chef-notes-presentateur" rows="6"
                       x-model="notes" @input="notesDirty = true; scheduleSave()" @blur="saveNotes()"
+                      @readonly(!$canEditNotes)
                       placeholder="Notes de régie, consignes de lecture, points d'attention…"
                       class="w-full rounded-lg border border-outline/30 bg-white px-3 py-2.5 text-sm leading-relaxed text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea>
 
@@ -96,11 +112,15 @@
                             class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline/30 px-3 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container">
                         <i class="fa-solid fa-display text-xs" aria-hidden="true"></i> Afficher le prompteur
                     </button>
+                    @if($canEditNotes)
                     <button type="button" @click="saveNotes()" :disabled="saving || !courante()"
                             class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-primary-container hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                         <i class="fa-solid fa-floppy-disk text-xs" :class="saving ? 'fa-spin' : ''" aria-hidden="true"></i>
                         <span x-text="saving ? 'Enregistrement…' : 'Enregistrer les notes'">Enregistrer les notes</span>
                     </button>
+                    @else
+                        <span class="text-xs text-on-surface-variant">Notes consultables en lecture seule</span>
+                    @endif
                 </div>
             </div>
         </div>

@@ -61,7 +61,7 @@
                         <span class="text-on-surface-variant font-normal text-lg">· {{ $dateEdition }}</span>
                     </h1>
                     <p class="text-sm text-on-surface-variant mt-2 max-w-3xl">
-                        Suivez chaque sujet de la production au diffusion : cliquez sur une étape
+                        Suivez chaque sujet de la production à la diffusion : cliquez sur une étape
                         <span class="font-semibold text-primary">Terrain · Montage · Habillage · Livraison · Diffusion</span>
                         pour la faire progresser.
                     </p>
@@ -134,7 +134,7 @@
         @endif
         <div class="bg-white rounded-2xl border border-outline/10 shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm hidden min-[2200px]:table">
+                <table class="w-full text-left border-collapse text-sm hidden min-[1536px]:table">
                     <thead>
                         <tr class="border-b border-outline-variant bg-surface-container sticky top-0 z-20">
                             <th class="p-3.5 text-xs uppercase tracking-wider font-semibold text-on-surface-variant w-14 text-center hidden lg:table-cell">Ordre</th>
@@ -254,7 +254,7 @@
                     </tbody>
                 </table>
             </div>
-            <div id="redaction-cards" class="min-[2200px]:hidden p-3 sm:p-4 space-y-3">
+            <div id="redaction-cards" class="min-[1536px]:hidden p-3 sm:p-4 space-y-3">
                 <p x-show="sujets.length === 0" class="py-8 text-center text-sm text-on-surface-variant">
                     Aucun sujet dans ce conducteur de rédaction.
                 </p>

@@ -6,12 +6,14 @@ namespace App\Http\Controllers;
 
 use App\Enums\StatutEtapeWorkflowEnum;
 use App\Events\ConducteurChanged;
+use App\Models\Conducteur;
 use App\Models\Intervenant;
 use App\Models\Sequence;
 use App\Services\ConducteurCalculatorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 final class SequenceController extends Controller
 {
@@ -58,6 +60,9 @@ final class SequenceController extends Controller
             'position' => ['sometimes', 'integer', 'min:1'],
         ]);
 
+        $conducteur = Conducteur::findOrFail((int) $valid['conducteur_id']);
+        $this->autoriserCreation($conducteur);
+
         $duree = null;
         if (isset($valid['duration_minutes'])) {
             $duree = ((int) $valid['duration_minutes']) * 60 + ((int) ($valid['duration_seconds'] ?? 0));
@@ -101,6 +106,7 @@ final class SequenceController extends Controller
 
     public function update(Request $request, Sequence $sequence): RedirectResponse|JsonResponse
     {
+        $this->autoriserMutation($sequence, false);
         $this->normaliserIntervenantIds($request);
 
         $valid = $request->validate([
@@ -151,12 +157,18 @@ final class SequenceController extends Controller
 
     public function destroy(Request $request, Sequence $sequence): RedirectResponse|JsonResponse
     {
+        $this->autoriserMutation($sequence, true);
         $titre = $sequence->title;
+        $conducteur = $sequence->conducteur;
         try {
             $sequence->intervenants()->detach();
         } catch (\Throwable) {
         }
         $sequence->delete();
+        if ($conducteur && (int) $conducteur->active_sequence_id === (int) $sequence->id) {
+            $conducteur->updateQuietly(['active_sequence_id' => null]);
+        }
+        ConducteurChanged::dispatch((int) $sequence->conducteur_id);
 
         return $this->succes($request, "Élément « {$titre} » supprimé.");
     }
@@ -237,6 +249,9 @@ final class SequenceController extends Controller
             abort(400);
         }
 
+        Gate::authorize('view', $sequence);
+        Gate::authorize('view', $sequence->conducteur);
+
         // Trié par position du pivot (orderByPivot) — le 1ᵉʳ est l'invité principal
         $intervenants = $sequence->intervenants;
 
@@ -276,13 +291,14 @@ final class SequenceController extends Controller
             'notes_perso' => ['nullable', 'string', 'max:65535'],
         ]);
 
-        $this->authorize('updateNotesPresentateur', $sequence);
+        Gate::authorize('view', $sequence->conducteur);
 
         $maj = [];
 
         // ⚠️ Un champ absent de la requête ne doit JAMAIS effacer la valeur existante
         //    (sinon sauvegarder les notes perso vide les notes présentateur, et vice versa).
         if (array_key_exists('notes_presentateur', $valid)) {
+            Gate::authorize('updateNotesPresentateur', $sequence);
             $maj['notes_presentateur'] = $valid['notes_presentateur'];
         }
 
@@ -312,7 +328,7 @@ final class SequenceController extends Controller
             'ok' => true,
             'message' => 'Notes présentateur enregistrées.',
             'notes_preview' => $sequence->notes_preview,
-            'notes_perso' => (string) ($sequence->notes_perso ?? ''),
+            'notes_perso' => Gate::allows('viewNotesPerso', $sequence) ? (string) ($sequence->notes_perso ?? '') : '',
             'saved_at' => now()->format('H:i:s'),
         ]);
     }
@@ -329,6 +345,40 @@ final class SequenceController extends Controller
      *
      * JSON invalide → la clé reste une chaîne → règle `array` → 422.
      */
+    /**
+     * The generic sequence endpoints serve both editorial and broadcast conducteurs.
+     * Always authorize against the conductor AND the workflow-specific sequence policy.
+     */
+    private function autoriserCreation(Conducteur $conducteur): void
+    {
+        Gate::authorize('view', $conducteur);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
+
+        if (in_array((string) $conducteur->type, ['emission', 'chef_edition', 'presentation', 'presentateur'], true)) {
+            Gate::authorize('crudSequencePresentateur', Sequence::class);
+        } elseif ((string) $conducteur->type === 'redaction') {
+            Gate::authorize('crudSequenceRedaction', Sequence::class);
+        } else {
+            abort(404, 'Type de conducteur non pris en charge.');
+        }
+    }
+
+    private function autoriserMutation(Sequence $sequence, bool $suppression): void
+    {
+        $conducteur = $sequence->conducteur;
+        abort_unless($conducteur, 404);
+        Gate::authorize('view', $conducteur);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
+
+        if (in_array((string) $conducteur->type, ['emission', 'chef_edition', 'presentation', 'presentateur'], true)) {
+            Gate::authorize($suppression ? 'deleteSequencePresentateur' : 'crudSequencePresentateur', $sequence);
+        } elseif ((string) $conducteur->type === 'redaction') {
+            Gate::authorize($suppression ? 'deleteSequenceRedaction' : 'crudSequenceRedaction', $sequence);
+        } else {
+            abort(404, 'Type de conducteur non pris en charge.');
+        }
+    }
+
     private function normaliserIntervenantIds(Request $request): void
     {
         if (! $request->has('intervenant_ids')) {

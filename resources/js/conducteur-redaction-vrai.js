@@ -58,6 +58,7 @@ export default function conducteurRedactionVrai() {
         toastKind: 'info',
         _toastT: null,
         _liveRefreshTimer: null,
+        _livePollTimer: null,
         _realtimeChannel: null,
 
         // ============== INIT ==============
@@ -107,22 +108,29 @@ export default function conducteurRedactionVrai() {
         // ============== HELPERS ==============
         destroy() {
             if (this._liveRefreshTimer) clearTimeout(this._liveRefreshTimer);
+            if (this._livePollTimer) clearInterval(this._livePollTimer);
             if (this._realtimeChannel && window.Echo) {
                 window.Echo.leave(`conducteur.${this.conducteurId}`);
             }
         },
         subscribeToLiveUpdates() {
-            if (!window.Echo || !this.conducteurId || !this.routes.liveState) return;
+            if (!this.conducteurId || !this.routes.liveState) return;
 
-            this._realtimeChannel = window.Echo
-                .private(`conducteur.${this.conducteurId}`)
-                .listen('.conducteur.changed', (event) => {
-                    if (+event.conducteur_id !== +this.conducteurId) return;
-                    if (this._liveRefreshTimer) clearTimeout(this._liveRefreshTimer);
-                    this._liveRefreshTimer = setTimeout(() => this.refreshLiveState(), 300);
-                });
+            // Poll even without Echo/Reverb: no stale workflow after a colleague edits.
             this.refreshLiveState();
-        },
+            this._livePollTimer = window.setInterval(() => {
+                if (!document.hidden && !this.isSavingSujet && !this.showModal) this.refreshLiveState();
+            }, 15000);
+            if (window.Echo) {
+                this._realtimeChannel = window.Echo
+                    .private(`conducteur.${this.conducteurId}`)
+                    .listen('.conducteur.changed', (event) => {
+                        if (+event.conducteur_id !== +this.conducteurId) return;
+                        if (this._liveRefreshTimer) clearTimeout(this._liveRefreshTimer);
+                        this._liveRefreshTimer = setTimeout(() => this.refreshLiveState(), 300);
+                    });
+            }
+        }
         filteredEmissionOptions() {
             const query = String(this.emissionSearch || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
             return this.emissionOptions.filter((emission) => {
