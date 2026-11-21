@@ -75,12 +75,12 @@
         @can('create', \App\Models\SourceVeille::class)
             <!-- FORMULAIRE D'AJOUT / MODIFICATION -->
             <div class="w-full">
-                <div class="bg-surface rounded-xl p-6 border border-outline-variant shadow-[0_10px_30px_-10px_rgba(0,26,65,0.04)]">
+                <div class="rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-6">
                     <h2 class="text-sm font-bold tracking-[0.05em] text-primary mb-4">
                         {{ $editing?->exists ? 'Modifier la source' : "Formulaire d'ajout" }}
                     </h2>
 
-                    <form action="{{ $route }}" method="POST" novalidate>
+                    <form action="{{ $route }}" method="POST">
                         @csrf
                         @if ($method === 'PUT')
                             @method('PUT')
@@ -88,10 +88,11 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div class="flex flex-col gap-1.5 w-full">
-                                <label class="text-xs text-on-surface-variant font-medium">Nom de la source</label>
+                                <label for="veille-source-name" class="text-xs font-semibold text-on-surface-variant">Nom de la source</label>
                                 <input
                                     type="text"
                                     name="name"
+                                    id="veille-source-name"
                                     value="{{ $oldName }}"
                                     maxlength="200"
                                     placeholder="ex: Reuters Technology"
@@ -103,10 +104,11 @@
                             </div>
 
                             <div class="flex flex-col gap-1.5 w-full">
-                                <label class="text-xs text-on-surface-variant font-medium">Adresse du site ou du flux</label>
+                                <label for="veille-source-url" class="text-xs font-semibold text-on-surface-variant">Adresse du site ou du flux</label>
                                 <input
                                     type="url"
                                     name="url"
+                                    id="veille-source-url"
                                     value="{{ $oldUrl }}"
                                     maxlength="1000"
                                     placeholder="https://..."
@@ -120,8 +122,8 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pt-4 border-t border-outline-variant">
                             <div class="flex flex-col gap-1.5">
-                                <label class="text-xs text-on-surface-variant font-medium">Type de source</label>
-                                <select name="type" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg text-[15px]">
+                                <label for="veille-source-type" class="text-xs font-semibold text-on-surface-variant">Type de source</label>
+                                <select name="type" id="veille-source-type" class="ui-field">
                                     <option value="" @selected($oldType === '')>Détection automatique</option>
                                     <option value="rss"  @selected($oldType === 'rss')>Flux RSS</option>
                                     <option value="web"  @selected($oldType === 'web')>Site web (scraping)</option>
@@ -214,16 +216,16 @@
                     <form method="GET" action="{{ route('veille.sources') }}" class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                         <div class="relative flex-1 sm:min-w-[260px]">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm"></i>
-                            <input type="search" name="q" value="{{ $search }}" placeholder="Rechercher par nom ou URL…"
+                            <input type="search" name="q" value="{{ $search }}" aria-label="Rechercher une source de veille" placeholder="Rechercher par nom ou URL…"
                                    class="w-full rounded-xl border border-outline-variant bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15">
                         </div>
-                        <select name="status" class="rounded-xl border border-outline-variant bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15">
+                        <select name="status" aria-label="Filtrer les sources par statut" class="ui-field">
                             <option value="">Tous les statuts</option>
                             <option value="active" @selected($statusFilter === 'active')>Actives</option>
                             <option value="error" @selected($statusFilter === 'error')>En erreur</option>
                             <option value="disabled" @selected($statusFilter === 'disabled')>Désactivées</option>
                         </select>
-                        <button class="rounded-xl bg-primary-container px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110">Filtrer</button>
+                        <button class="ui-action ui-action--primary">Filtrer</button>
                         @if($search !== '' || $statusFilter !== '')
                             <a href="{{ route('veille.sources') }}" class="rounded-xl border border-outline-variant px-4 py-2.5 text-center text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container">Effacer</a>
                         @endif
@@ -234,7 +236,7 @@
 @include('_partials.bulk-delete-toolbar', ['resource' => 'sources-veille', 'explanation' => 'La collecte des sources cochées sera arrêtée. Leurs articles seront conservés.'])
 @endif
 
-<div class="overflow-x-auto">
+<div class="overflow-x-auto" role="region" tabindex="0" aria-label="Liste des sources de veille">
                     <table data-mobile-cards class="w-full text-left border-collapse min-w-max">
                         <thead>
                             <tr class="bg-surface-container-low border-b border-outline-variant">
