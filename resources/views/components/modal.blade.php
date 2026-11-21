@@ -27,7 +27,7 @@
             const panel = this.$refs.panel;
             if (!panel) return [];
             return Array.from(panel.querySelectorAll(
-                'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex=&quot;-1&quot;])'
             )).filter((item) => item.getClientRects().length && item.getAttribute('aria-hidden') !== 'true');
         },
         activate() {

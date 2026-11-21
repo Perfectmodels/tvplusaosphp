@@ -58,6 +58,32 @@ class UiDesignSystemTest extends TestCase
         $this->assertStringContainsString('close-modal.window', $html);
     }
 
+    public function test_modal_alpine_code_is_not_rendered_as_visible_page_text(): void
+    {
+        $html = Blade::render(
+            '<x-modal name="alerte-regie" label="Diffuser une alerte"><button type="button">Fermer</button></x-modal>',
+        );
+
+        $dom = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        try {
+            $dom->loadHTML('<!DOCTYPE html><html><body>'.$html.'</body></html>');
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        $xpath = new \DOMXPath($dom);
+        $elements = $xpath->query('//*[@x-data]');
+        $this->assertSame(1, $elements->length, 'Le code Alpine doit rester dans un seul attribut x-data.');
+
+        $expression = $elements->item(0)->getAttribute('x-data');
+        $this->assertStringContainsString('getClientRects()', $expression);
+        $this->assertStringContainsString('[tabindex="-1"]', $expression);
+        $this->assertStringNotContainsString('getClientRects()', $dom->textContent);
+        $this->assertStringNotContainsString('previousOverflow', $dom->textContent);
+    }
+
     public function test_dropdown_exposes_menu_state_and_keyboard_navigation(): void
     {
         $html = Blade::render(
