@@ -441,9 +441,14 @@ final class ConducteurPdfExporter
 
     private function startTime(Conducteur $c): string
     {
-        return ConducteurCalculatorService::formatHeure(
-            $c->heure_debut_emission_calc ?: $c->emission?->heure_debut
-        ) ?: '—';
+        $value = $c->heure_debut_emission_calc ?: $c->emission?->heure_debut;
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('H:i');
+        }
+
+        return is_string($value) && $value !== ''
+            ? substr(ConducteurCalculatorService::formatHeure($value), 0, 5)
+            : '—';
     }
 
     private function clock(int $seconds): string
