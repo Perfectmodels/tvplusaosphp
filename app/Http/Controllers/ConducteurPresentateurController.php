@@ -12,6 +12,7 @@ use App\Models\Intervenant;
 use App\Models\Journaliste;
 use App\Models\Sequence;
 use App\Services\ConducteurEditionService;
+use App\Services\ConducteurAntenneService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ConducteurPresentateurController extends Controller
@@ -163,6 +165,9 @@ class ConducteurPresentateurController extends Controller
             404
         );
 
+        // Reconcile elapsed sequences on the server before returning a snapshot.
+        app(ConducteurAntenneService::class)->reconcilier($conducteur);
+        $conducteur->refresh();
         $sequences = $conducteur->sequences()
             ->with('intervenants')
             ->orderBy('position')
@@ -196,6 +201,15 @@ class ConducteurPresentateurController extends Controller
     public function demarrerAntenne(Request $request, Conducteur $conducteur): JsonResponse
     {
         $this->autoriserPilotageAntenne($request, $conducteur);
+
+        return DB::transaction(function () use ($conducteur, $request): JsonResponse {
+            $conducteur = Conducteur::query()->lockForUpdate()->findOrFail($conducteur->id);
+
+        if ($conducteur->antenne_started_at !== null && $conducteur->antenne_ended_at === null) {
+            return response()->json(array_merge([
+                'ok' => true, 'message' => 'Chronomètre déjà en marche.',
+            ], self::payloadAntenne($conducteur)));
+        }
 
         $sequences = $conducteur->sequences()->get();
         if ($sequences->isEmpty()) {
@@ -234,12 +248,16 @@ class ConducteurPresentateurController extends Controller
             'ok' => true,
             'message' => $enPause ? 'Compte à rebours repris.' : 'Compte à rebours de l\'émission démarré.',
         ], self::payloadAntenne($conducteur->fresh(), $sequences)));
+        });
     }
 
     /** Met le compte à rebours de l'émission en pause (le temps est gelé). */
     public function pauseAntenne(Request $request, Conducteur $conducteur): JsonResponse
     {
         $this->autoriserPilotageAntenne($request, $conducteur);
+
+        return DB::transaction(function () use ($conducteur, $request): JsonResponse {
+            $conducteur = Conducteur::query()->lockForUpdate()->findOrFail($conducteur->id);
 
         if ($conducteur->antenne_started_at === null) {
             return response()->json(['ok' => false, 'message' => 'Le compte à rebours n\'est pas démarré.'], 422);
@@ -260,12 +278,16 @@ class ConducteurPresentateurController extends Controller
             'ok' => true,
             'message' => 'Compte à rebours en pause.',
         ], self::payloadAntenne($conducteur->fresh())));
+        });
     }
 
     /** Réinitialise le compte à rebours : tout revient à zéro (séquences « À venir »). */
     public function reinitialiserAntenne(Request $request, Conducteur $conducteur): JsonResponse
     {
         $this->autoriserPilotageAntenne($request, $conducteur);
+
+        return DB::transaction(function () use ($conducteur, $request): JsonResponse {
+            $conducteur = Conducteur::query()->lockForUpdate()->findOrFail($conducteur->id);
 
         $conducteur->timestamps = false;
         $conducteur->updateQuietly([
@@ -290,6 +312,7 @@ class ConducteurPresentateurController extends Controller
             'ok' => true,
             'message' => 'Compte à rebours réinitialisé.',
         ], self::payloadAntenne($conducteur->fresh())));
+        });
     }
 
     /**
@@ -300,6 +323,9 @@ class ConducteurPresentateurController extends Controller
     public function marquerSequenceCourante(Request $request, Conducteur $conducteur): JsonResponse
     {
         $this->autoriserPilotageAntenne($request, $conducteur);
+
+        return DB::transaction(function () use ($conducteur, $request): JsonResponse {
+            $conducteur = Conducteur::query()->lockForUpdate()->findOrFail($conducteur->id);
 
         $valid = $request->validate([
             'sequence_id' => ['required', 'integer'],
@@ -338,6 +364,7 @@ class ConducteurPresentateurController extends Controller
             'ok' => true,
             'message' => 'Progression antenne mise à jour.',
         ], self::payloadAntenne($conducteur->fresh())));
+        });
     }
 
     /**
