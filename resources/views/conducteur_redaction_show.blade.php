@@ -786,27 +786,31 @@
     {{-- MODALE CRUD SUJET (Create / Edit 7 champs: Ordre, Durée, Émission, Type, Sujet, Angle, JRI) --}}
     {{-- ========================================================= --}}
     <template x-if="showModal">
-        <div x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        <div x-cloak x-ref="sujetDialog" tabindex="-1"
+             role="dialog" aria-modal="true" aria-labelledby="redaction-modal-title"
+             class="fixed inset-0 z-[100] flex items-center justify-center p-3 focus:outline-none sm:p-4"
              x-transition.opacity.duration.200ms
-             @keydown.escape.window="closeModal()">
+             @keydown.tab="bloquerTabSujet($event)"
+             @keydown.escape.stop.prevent="closeModal()">
             <div class="absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]" @click.self="closeModal()"></div>
-            <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-outline/10 max-h-[92vh] overflow-hidden flex flex-col"
+            <div class="relative flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-2xl"
                  x-transition.scale.origin.center.duration.200ms>
 
                 <header class="px-6 py-5 border-b border-outline/10 bg-white">
                     <div class="flex justify-between items-start gap-4">
                         <div>
-                            <h3 class="text-xl font-bold text-on-surface flex items-center gap-2" x-text="modalTitle">Ajouter un sujet</h3>
+                            <h3 id="redaction-modal-title" class="flex items-center gap-2 text-xl font-bold text-on-surface" x-text="modalTitle">Ajouter un sujet</h3>
                             <p class="text-sm text-on-surface-variant mt-1" x-text="modalSubtitle">Renseignez le sujet, son émission, son angle, le type et le journaliste responsable.</p>
                         </div>
-                        <button @click="closeModal()" class="p-2.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-surface-container text-secondary transition-colors">
+                        <button type="button" @click="closeModal()" aria-label="Fermer le formulaire du sujet"
+                                class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
                 </header>
 
-                <div class="p-6 overflow-y-auto space-y-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="space-y-5 overflow-y-auto p-4 sm:p-6" :aria-busy="isSavingSujet ? 'true' : 'false'">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>
                             <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
                                 Ordre dans le conducteur
@@ -872,10 +876,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                        <label for="redaction-form-title" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
                             Titre / Sujet <span class="text-error">*</span>
                         </label>
-                        <input type="text" x-model="sujetForm.title" maxlength="500"
+                        <input x-ref="sujetTitle" id="redaction-form-title" type="text" x-model="sujetForm.title" maxlength="500" required
                                placeholder="Ex: Réaction des députés sur la loi immigration"
                                class="w-full px-3.5 py-2.5 rounded-lg border border-outline/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-on-surface">
                     </div>
@@ -1035,8 +1039,8 @@
                         </div>
                     </div>
 
-                    <div x-show="Object.keys(modalErrs).length > 0"
-                         class="p-4 rounded-lg bg-error-container/20 border border-error-container/50 space-y-1">
+                    <div x-show="Object.keys(modalErrs).length > 0" role="alert" aria-live="assertive"
+                         class="space-y-1 rounded-lg border border-error/30 bg-error-container/20 p-4">
                         <template x-for="msg in Object.values(modalErrs)" :key="msg">
                             <p class="text-sm text-error flex items-start gap-2">
                                 <i class="fa-solid fa-circle-xmark mt-0.5 text-xs"></i>
@@ -1046,7 +1050,7 @@
                     </div>
                 </div>
 
-                <footer class="px-6 py-4 border-t border-outline/10 bg-surface-container-lowest flex items-center justify-between gap-3 flex-wrap">
+                <footer class="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant bg-white px-4 py-4 sm:px-6">
                     <p class="text-xs text-on-surface-variant">
                         <i class="fa-solid fa-circle-info text-primary mr-1.5"></i>
                         Les étapes de la production se gèrent directement dans la liste des sujets : cliquez sur un badge pour faire progresser le sujet.
@@ -1057,7 +1061,7 @@
                             Annuler
                         </button>
                         <button type="button" @click="saveSujet()" :disabled="isSavingSujet"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                                class="ui-action ui-action--primary" :aria-busy="isSavingSujet ? 'true' : 'false'">
                             <i x-show="!isSavingSujet" class="fa-solid fa-check"></i>
                             <i x-show="isSavingSujet" class="fa-solid fa-spinner fa-spin"></i>
                             <span x-text="isSavingSujet ? 'Enregistrement…' : modalSubmitLabel">Ajouter le sujet</span>
