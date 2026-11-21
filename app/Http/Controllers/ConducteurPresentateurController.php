@@ -243,7 +243,7 @@ class ConducteurPresentateurController extends Controller
             ], 500);
         }
 
-        ConducteurChanged::dispatch((int) $conducteur->id);
+        DB::afterCommit(static fn () => ConducteurChanged::dispatch((int) $conducteur->id));
 
         return response()->json(array_merge([
             'ok' => true,
@@ -273,7 +273,7 @@ class ConducteurPresentateurController extends Controller
             'antenne_started_at' => null,
         ]);
 
-        ConducteurChanged::dispatch((int) $conducteur->id);
+        DB::afterCommit(static fn () => ConducteurChanged::dispatch((int) $conducteur->id));
 
         return response()->json(array_merge([
             'ok' => true,
@@ -311,7 +311,7 @@ class ConducteurPresentateurController extends Controller
             ]);
         }
 
-        ConducteurChanged::dispatch((int) $conducteur->id);
+        DB::afterCommit(static fn () => ConducteurChanged::dispatch((int) $conducteur->id));
 
         return response()->json(array_merge([
             'ok' => true,
@@ -364,7 +364,7 @@ class ConducteurPresentateurController extends Controller
             ]);
         }
 
-        ConducteurChanged::dispatch((int) $conducteur->id);
+        DB::afterCommit(static fn () => ConducteurChanged::dispatch((int) $conducteur->id));
 
         return response()->json(array_merge([
             'ok' => true,
