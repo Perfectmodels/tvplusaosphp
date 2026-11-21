@@ -160,8 +160,8 @@ class AdminDashboardAnalyticsService
                 'date' => $log->created_at?->format('d/m H:i'),
             ])->all();
 
-        $trendMax = max(1, ...array_map(fn ($d) => max($d['production'], $d['published']), $trend));
-        $emissionMax = max(1, ...array_column($emissions, 'total'));
+        $trendMax = max([1, ...array_map(fn ($d) => max($d['production'], $d['published']), $trend)]);
+        $emissionMax = max([1, ...array_column($emissions, 'total')]);
 
         return [
             'cards' => $cards,
