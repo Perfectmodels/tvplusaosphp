@@ -62,7 +62,7 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                         Présentateur assigné <span class="text-error">*</span>
                     </label>
-                    <select name="presentateur_id" required class="input-field">
+                    <select name="presentateur_id" class="input-field">
                         <option value="">Sélectionner un présentateur…</option>
                         @if($presentateurs->isNotEmpty())
                             <optgroup label="Présentateurs (intervenants)">
