@@ -105,7 +105,7 @@ $statusSplash = [
 
                 <button type="submit" class="ui-action ui-action--primary">Filtrer</button>
 
-                @if($currentCat !== '' || $rechercheVeille !== '' || $sourceSelectionnee !== '')
+                @if($currentCat !== '' || $rechercheVeille !== '' || $sourceSelectionnee !== '' || request()->filled('country') || request()->filled('stream') || request()->filled('status'))
                     <a href="{{ route('veille.sujets.index') }}" class="ui-action ui-action--outline">Réinitialiser</a>
                 @endif
             </form>
