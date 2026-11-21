@@ -397,7 +397,7 @@
             <form x-show="!modaleChargement" @submit.prevent="soumettreModaleSequence()"
                   @input="modaleErreur = ''"
                   method="POST"
-                  class="p-5 grid grid-cols-1 gap-4">
+                  class="p-5 grid grid-cols-1 gap-4 md:grid-cols-2">
                 @csrf
 
                 <input type="hidden" name="conducteur_id" value="{{ $conducteur->id }}">
@@ -405,8 +405,8 @@
 
                 {{-- Titre (OBLIGATOIRE) --}}
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Titre ou Sujet <span class="text-error">*</span></label>
-                    <input type="text" name="title"
+                    <label for="chef-sequence-title" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Titre ou Sujet <span class="text-error">*</span></label>
+                    <input id="chef-sequence-title" type="text" name="title" maxlength="255"
                            x-model="formSeq.title"
                            required
                            class="w-full border border-outline rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
@@ -415,8 +415,8 @@
 
                 {{-- Type + Durée --}}
                 <div>
-                    <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Type <span class="text-error">*</span></label>
-                    <select name="type"
+                    <label for="chef-sequence-type" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Type <span class="text-error">*</span></label>
+                    <select id="chef-sequence-type" name="type"
                             x-model="formSeq.type"
                             required
                             class="w-full border border-outline rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors">
@@ -429,7 +429,7 @@
                     <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Durée</label>
                     <div class="grid grid-cols-2 gap-2">
                         <div class="relative">
-                            <input type="number" name="duration_minutes"
+                            <input id="chef-sequence-minutes" type="number" name="duration_minutes" aria-label="Durée en minutes"
                                    x-model.number="formSeq.duration_minutes"
                                    min="0" max="600"
                                    class="w-full border border-outline rounded-lg px-3 py-2.5 pr-8 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
@@ -437,7 +437,7 @@
                             <span class="absolute right-3 top-2.5 text-secondary text-xs">min</span>
                         </div>
                         <div class="relative">
-                            <input type="number" name="duration_seconds"
+                            <input id="chef-sequence-seconds" type="number" name="duration_seconds" aria-label="Durée en secondes"
                                    x-model.number="formSeq.duration_seconds"
                                    min="0" max="59"
                                    class="w-full border border-outline rounded-lg px-3 py-2.5 pr-8 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
@@ -447,12 +447,23 @@
                     </div>
                 </div>
 
+                {{-- Position d'insertion : cohérente avec la réorganisation des séquences. --}}
+                <div x-show="!modeEdition" x-cloak class="md:col-span-2">
+                    <label for="chef-sequence-position" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                        Position dans l'émission
+                    </label>
+                    <input id="chef-sequence-position" type="number" name="position"
+                           x-model.number="formSeq.position" min="1" :max="sequences.length + 1" step="1"
+                           class="w-full rounded-lg border border-outline px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 sm:max-w-36">
+                    <p class="mt-1 text-xs text-on-surface-variant">Les séquences suivantes seront décalées automatiquement.</p>
+                </div>
+
                 {{-- Invités (1 ou plusieurs) + Fonction --}}
-                <div>
-                    <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Intervenants invités</label>
+                <div class="md:col-span-2">
+                    <label for="chef-invite-search" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Intervenants invités</label>
                     <div class="flex gap-2">
                         <div class="flex-1 min-w-0 relative">
-                            <input type="search"
+                            <input id="chef-invite-search" type="search"
                                    x-model="inviteSearch"
                                    @focus="inviteDropdownOpen = true"
                                    @click.outside="inviteDropdownOpen = false"
@@ -530,7 +541,7 @@
                         @foreach($journalistes as $j)
                             <option value="{{ $j->id }}">
                                 {{ $j->nomComplet }}
-                                @if($j->fonction) <span class="text-secondary">({{ $j->fonction?->label() }})</span>@endif
+                                @if($j->fonction) ({{ $j->fonction?->label() }})@endif
                             </option>
                         @endforeach
                     </select>
@@ -553,7 +564,7 @@
                               placeholder="Ex : Accentuer les 3 innovations majeures pour les citoyens"></textarea>
                 </div>
 
-                <div class="md:col-span-2 pt-4 flex flex-wrap justify-end gap-3 border-t border-outline-variant mt-2">
+                <div class="md:col-span-2 sticky bottom-0 z-10 -mx-5 mt-2 flex flex-wrap justify-end gap-3 border-t border-outline-variant bg-white px-5 py-4">
                     <button type="button"
                             @click="fermerToutesModales()"
                             class="px-5 py-2.5 border border-outline rounded-lg text-secondary hover:bg-surface-container font-semibold transition-colors">
