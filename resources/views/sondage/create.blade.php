@@ -11,6 +11,23 @@
                 Les débatteurs de la séquence DÉBAT sont automatiquement les candidats du sondage.
             </p>
 
+            @if($conducteurs->count() > 1)
+                <form method="GET" action="{{ route('sondages.create', $emission) }}" class="mb-5 rounded-lg border border-slate-200 p-3">
+                    <label for="edition-select" class="mb-2 block text-sm font-semibold text-slate-800">Édition du débat</label>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="edition-select" name="conducteur_id" required class="min-w-[200px] flex-1 rounded-lg border border-slate-300 p-2.5 text-sm">
+                            <option value="">Choisissez une édition</option>
+                            @foreach($conducteurs as $edition)
+                                <option value="{{ $edition->id }}" @selected((int) $selectedConducteurId === (int) $edition->id)>
+                                    {{ $edition->date_edition?->format('d/m/Y') }} · {{ $edition->code_conducteur_affichage }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white">Afficher les débatteurs</button>
+                    </div>
+                    @error('conducteur_id') <p class="mt-2 text-sm text-red-700">{{ $message }}</p> @enderror
+                </form>
+            @endif
             @if($candidats->isEmpty())
                 <div role="alert" class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
                     Aucun débatteur n'est associé à une séquence DÉBAT de cette émission.
@@ -19,6 +36,7 @@
             @else
                 <form method="POST" action="{{ route('sondages.store', $emission) }}" class="space-y-5">
                     @csrf
+                    <input type="hidden" name="conducteur_id" value="{{ $selectedConducteurId }}">
 
                     <div>
                         <label for="question" class="mb-1.5 block text-sm font-semibold text-slate-800">Question posée au public <span class="text-red-700">*</span></label>
