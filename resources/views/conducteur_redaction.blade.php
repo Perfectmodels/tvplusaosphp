@@ -148,14 +148,14 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <button type="button" @click="refreshFromServer(false)" :disabled="syncing || ordreEnCours"
-                        class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline/30 bg-white px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container disabled:opacity-50"
+                        class="ui-action ui-action--outline disabled:opacity-50"
                         aria-label="Actualiser les séquences du conducteur">
                     <i :class="syncing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate'" aria-hidden="true"></i>
                     Actualiser
                 </button>
                 @if($canAnyCreate)
                     <button type="button" @click="ouvrirModaleSequence(null)"
-                            class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-container hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                            class="ui-action ui-action--primary">
                         <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i> Ajouter un élément
                     </button>
                 @endif
@@ -226,7 +226,7 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <x-ui.table-shell label="Séquences du conducteur d'émission">
             <table data-mobile-cards class="w-full text-left border-collapse text-xs" id="conducteur-tableau">
                 <thead>
                     <tr class="border-b border-outline-variant bg-white sticky top-0 z-10">
@@ -246,12 +246,19 @@
 
                     <template x-if="sequences.length === 0">
                         <tr>
-                            <td colspan="9" class="p-16 text-center text-secondary italic">
-                                @if($canAnyCreate)
-                                    Aucun élément dans le conducteur. Cliquez sur <span class="font-semibold text-primary">« Ajouter un élément »</span> pour commencer.
-                                @else
-                                    Aucune séquence programmée pour cette édition.
-                                @endif
+                            <td colspan="9" class="p-4">
+                                <x-ui.empty-state icon="fa-list-check"
+                                    title="Aucune séquence programmée"
+                                    description="Le conducteur de cette édition ne contient pas encore de séquences.">
+                                    @if($canAnyCreate)
+                                        <x-slot:actions>
+                                            <button type="button" class="ui-action ui-action--primary"
+                                                    @click="ouvrirModaleSequence(null)">
+                                                <i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une séquence
+                                            </button>
+                                        </x-slot:actions>
+                                    @endif
+                                </x-ui.empty-state>
                             </td>
                         </tr>
                     </template>
@@ -351,7 +358,7 @@
                     </template>
                 </tbody>
             </table>
-        </div>
+        </x-ui.table-shell>
 
         {{-- Footer durée totale --}}
         <div class="p-4 border-t border-outline-variant bg-surface-container-low flex justify-between items-center">
