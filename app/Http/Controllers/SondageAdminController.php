@@ -158,7 +158,8 @@ final class SondageAdminController extends Controller
     {
         return Sequence::query()
             ->where('conducteur_id', $conducteurId)
-            ->where('emission_id', $emission->id)
+            // La clé émission de certaines séquences historiques est nullable ;
+            // le conducteur sélectionné garantit déjà la bonne émission.
             ->where('type', TypeSequenceEnum::Debat->value)
             ->orderBy('position')
             ->first();
