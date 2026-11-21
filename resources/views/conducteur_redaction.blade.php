@@ -164,12 +164,30 @@
                     <i class="fa-solid fa-comment-dots text-primary" aria-hidden="true"></i>
                     Discussion interne
                 </button>
-                <a href="{{ route('conducteurs.emission.export-pdf', $conducteur) }}"
-                   class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline/30 bg-white px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                   title="Exporter le script présentateur et les données du conducteur en PDF (impression)">
-                    <i class="fa-solid fa-file-pdf text-primary" aria-hidden="true"></i>
-                    Exporter (PDF)
-                </a>
+                <x-dropdown align="right" width="48" contentClasses="bg-white py-1">
+                    <x-slot name="trigger">
+                        <button type="button" class="ui-action ui-action--outline"
+                                aria-label="Ouvrir les options d'export PDF">
+                            <i class="fa-solid fa-file-pdf text-primary" aria-hidden="true"></i>
+                            Exporter en PDF
+                            <i class="fa-solid fa-chevron-down text-xs" aria-hidden="true"></i>
+                        </button>
+                    </x-slot>
+                    <x-slot name="content">
+                        <x-dropdown-link href="{{ route('conducteurs.emission.export-pdf', $conducteur) }}">
+                            <span class="block font-semibold">Conducteur technique</span>
+                            <span class="block text-xs text-on-surface-variant">A4 paysage · régie et réalisation</span>
+                        </x-dropdown-link>
+                        <x-dropdown-link href="{{ route('conducteurs.emission.export-script-pdf', $conducteur) }}">
+                            <span class="block font-semibold">Script présentateur</span>
+                            <span class="block text-xs text-on-surface-variant">A4 portrait · texte de lecture</span>
+                        </x-dropdown-link>
+                        <x-dropdown-link href="{{ route('conducteurs.emission.export-dossier-pdf', $conducteur) }}">
+                            <span class="block font-semibold">Dossier complet</span>
+                            <span class="block text-xs text-on-surface-variant">Conducteur et script réunis</span>
+                        </x-dropdown-link>
+                    </x-slot>
+                </x-dropdown>
                 @can('update', $conducteur)
                     <button type="button"
                             @click="$dispatch('open-modal', 'conducteur-alerte')"
