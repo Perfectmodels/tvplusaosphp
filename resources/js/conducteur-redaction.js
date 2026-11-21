@@ -12,6 +12,10 @@ export default function conducteurRedaction() {
         routes: {},
         sequences: [],
         dureeActuelle: '00:00',
+        syncing: false,
+        syncError: false,
+        lastSyncAt: '',
+        _syncTimer: null,
 
         modeReorg: false,
         ordreEnCours: false,
@@ -33,6 +37,7 @@ export default function conducteurRedaction() {
         inviteDropdownOpen: false,
 
         formSeq: {
+            position: 1,
             title: '',
             type: 'SUJET',
             duration_minutes: 2,
@@ -60,6 +65,58 @@ export default function conducteurRedaction() {
             this.routes = cfg.routes;
             this.sequences = cfg.sequences || [];
             this.dureeActuelle = cfg.dureeActuelle || '00:00';
+            if (this._syncTimer) window.clearInterval(this._syncTimer);
+            this._syncTimer = window.setInterval(() => {
+                if (document.visibilityState === 'visible'
+                    && !this.modaleSequenceVisible && !this.ordreEnCours
+                    && !this.envoiEnCours && !this.suppressionTotaleEnCours) {
+                    this.refreshFromServer(true);
+                }
+            }, 15000);
+            this.refreshFromServer(true);
+        },
+
+        destroy() {
+            if (this._syncTimer) window.clearInterval(this._syncTimer);
+            if (this._toastT) window.clearTimeout(this._toastT);
+            this._modalRequestId++;
+        },
+
+        async refreshFromServer(silent = true, force = false) {
+            if (this.syncing || !this.routes.liveState) return false;
+            if (!force && (this.modaleSequenceVisible || this.ordreEnCours
+                || this.envoiEnCours || this.suppressionTotaleEnCours)) return false;
+
+            this.syncing = true;
+            try {
+                const response = await fetch(this.routes.liveState, {
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!response.ok) throw new Error('Actualisation impossible (' + response.status + ').');
+                const snapshot = await response.json();
+                if (!Array.isArray(snapshot.chefSequences)) {
+                    throw new Error('Réponse conducteur incomplète.');
+                }
+                if (force || (!this.modaleSequenceVisible && !this.ordreEnCours)) {
+                    this.sequences = snapshot.chefSequences;
+                    this.dureeActuelle = snapshot.dureeActuelle || this.dureeActuelle;
+                }
+                this.syncError = false;
+                this.lastSyncAt = new Date().toLocaleTimeString('fr-FR', {
+                    hour: '2-digit', minute: '2-digit',
+                });
+                if (!silent) this.showToast('Conducteur actualisé.', 'success');
+                return true;
+            } catch (error) {
+                this.syncError = true;
+                if (!silent) this.showToast(error.message || 'Connexion indisponible.', 'error');
+                console.error('Actualisation conducteur :', error);
+                return false;
+            } finally {
+                this.syncing = false;
+            }
         },
 
         // ============ CRUD SÉQUENCE ============
@@ -74,6 +131,7 @@ export default function conducteurRedaction() {
             const requestId = ++this._modalRequestId;
 
             this.formSeq = {
+                position: this.sequences.length + 1,
                 title: '',
                 type: 'SUJET',
                 duration_minutes: 2,
@@ -97,6 +155,7 @@ export default function conducteurRedaction() {
                         if (requestId !== this._modalRequestId) return;
                         if (!json) throw new Error('Chargement impossible.');
                         this.formSeq = {
+                            position: Number(json.position) || 1,
                             title: json.title || '',
                             type: json.type_value || 'SUJET',
                             duration_minutes: json.duration_minutes_floor ?? 2,
@@ -198,19 +257,39 @@ export default function conducteurRedaction() {
         },
 
         async soumettreModaleSequence() {
-            if (!this.formSeq.title || this.envoiEnCours || this.modaleChargement) return;
+            if (this.envoiEnCours || this.modaleChargement) return;
             this.modaleErreur = '';
-            if (['DEBAT', 'DÉBAT'].includes(String(this.formSeq.type || '').toUpperCase()) && (this.formSeq.intervenant_ids.length < 2 || this.formSeq.intervenant_ids.length > 4)) {
+            const title = String(this.formSeq.title || '').trim();
+            const minutes = Number(this.formSeq.duration_minutes);
+            const seconds = Number(this.formSeq.duration_seconds);
+            if (!title || title.length > 255) {
+                this.modaleErreur = 'Le titre est obligatoire (255 caractères maximum).';
+                return;
+            }
+            if (!Number.isInteger(minutes) || minutes < 0 || minutes > 600
+                || !Number.isInteger(seconds) || seconds < 0 || seconds > 59
+                || minutes * 60 + seconds < 1 || minutes * 60 + seconds > 36000) {
+                this.modaleErreur = 'La durée doit être comprise entre 1 seconde et 600 minutes.';
+                return;
+            }
+            if (!this.modeEdition && (!Number.isInteger(+this.formSeq.position)
+                || +this.formSeq.position < 1 || +this.formSeq.position > this.sequences.length + 1)) {
+                this.modaleErreur = 'Position invalide pour ce conducteur.';
+                return;
+            }
+            if (['DEBAT', 'DÉBAT'].includes(String(this.formSeq.type || '').toUpperCase())
+                && (this.formSeq.intervenant_ids.length < 2 || this.formSeq.intervenant_ids.length > 4)) {
                 this.modaleErreur = 'Un débat exige entre 2 et 4 intervenants.';
                 return;
             }
+            this.formSeq.title = title;
             this.envoiEnCours = true;
 
             const formData = new FormData();
             Object.keys(this.formSeq).forEach(k => {
                 const v = this.formSeq[k];
                 // Invités gérés à part (JSON) + liste de détails hors formulaire
-                if (k === 'intervenant_ids' || k === 'intervenants') return;
+                if (k === 'intervenant_ids' || k === 'intervenants' || (k === 'position' && this.modeEdition)) return;
                 if (k === 'alerte_info') { formData.append(k, v ? '1' : '0'); return; }
                 if (v === null || v === undefined || v === '') return;
                 formData.append(k, typeof v === 'number' ? String(v) : v);
@@ -252,9 +331,13 @@ export default function conducteurRedaction() {
                 const json = await resp.json().catch(() => null);
 
                 if (resp.ok) {
-                    this.showToast((json && json.message) || (this.modeEdition ? 'Modifications enregistrées.' : 'Élément ajouté au conducteur.'), 'success');
                     this.fermerToutesModales(true);
-                    setTimeout(() => window.location.reload(), 400);
+                    const upToDate = await this.refreshFromServer(true, true);
+                    this.showToast(
+                        ((json && json.message) || (this.modeEdition ? 'Modifications enregistrées.' : 'Élément ajouté au conducteur.'))
+                        + (upToDate ? '' : ' Utilisez « Actualiser » pour voir la liste à jour.'),
+                        upToDate ? 'success' : 'info'
+                    );
                     return;
                 }
 
@@ -310,8 +393,12 @@ export default function conducteurRedaction() {
                 }
                 const json = await resp.json().catch(() => null);
                 if (resp.ok) {
-                    this.showToast((json && json.message) || `« ${this.seqASupprimer.titre} » supprimé.`, 'success');
-                    setTimeout(() => window.location.reload(), 400);
+                    const upToDate = await this.refreshFromServer(true, true);
+                    this.showToast(
+                        ((json && json.message) || `« ${this.seqASupprimer.titre} » supprimé.`)
+                        + (upToDate ? '' : ' Utilisez « Actualiser ».'),
+                        upToDate ? 'success' : 'info'
+                    );
                     return;
                 }
                 this.showToast((json && json.message) || 'Impossible de supprimer.', 'error');
@@ -343,7 +430,7 @@ export default function conducteurRedaction() {
                     } else {
                         this.showToast('Tous les éléments ont été supprimés.', 'success');
                     }
-                    setTimeout(() => window.location.reload(), 800);
+                    await this.refreshFromServer(true, true);
                     return;
                 }
                 const s = this.sequences[i];
@@ -407,6 +494,9 @@ export default function conducteurRedaction() {
                     body: JSON.stringify({ ordered_ids: ids })
                 });
                 const json = await resp.json().catch(() => null);
+                if (!resp.ok || !json?.ok) {
+                    throw new Error(json?.message || 'Impossible de réorganiser les séquences.');
+                }
                 if (resp.ok && json && json.ok) {
                     (json.sequences || []).forEach(serv => {
                         const idx = this.findSeqIndex(serv.id);
@@ -416,11 +506,12 @@ export default function conducteurRedaction() {
                         this.sequences[idx].duree_hm = serv.duree_hm;
                     });
                     if (json.duree_totale_hm) this.dureeActuelle = json.duree_totale_hm;
+                    await this.refreshFromServer(true, true);
                     this.showToast('Ordre mis à jour.', 'success');
                 }
             } catch (e) {
-                this.showToast('Ordre non enregistré. Actualisation du conducteur.', 'error');
-                window.location.reload();
+                this.showToast('Ordre non enregistré : ' + (e.message || 'erreur réseau'), 'error');
+                await this.refreshFromServer(true, true);
                 console.error('Reorder error', e);
             } finally {
                 this.ordreEnCours = false;

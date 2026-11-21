@@ -13,6 +13,7 @@ use App\Models\Intervenant;
 use App\Models\Journaliste;
 use App\Models\Sondage;
 use App\Services\ConducteurCalculatorService;
+use App\Support\ConducteurSequenceView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -82,10 +83,30 @@ final class ConducteurRedactionController extends Controller
         ]);
     }
 
-    /** État temps réel du conducteur partagé : même contrat que la vue antenne. */
+    /**
+     * One endpoint keeps the existing antenne snapshot contract while adding
+     * the same sequence rows as the shared Chef d'édition/Présentateur view.
+     */
     public function liveState(Conducteur $conducteur): JsonResponse
     {
-        return app(ConducteurPresentateurController::class)->liveState($conducteur);
+        $antenne = app(ConducteurPresentateurController::class)->liveState($conducteur);
+        if ($antenne->getStatusCode() !== 200) {
+            return $antenne;
+        }
+
+        $conducteur = $conducteur->fresh();
+        $lignes = $conducteur->sequences()
+            ->with(['intervenants', 'journalisteResponsable'])
+            ->orderBy('position')
+            ->get();
+
+        $etat = $antenne->getData(true);
+        $etat['chefSequences'] = $lignes
+            ->map(fn ($sequence) => ConducteurSequenceView::row($sequence, $conducteur, auth()->user()))
+            ->values()->all();
+        $etat['dureeActuelle'] = ConducteurCalculatorService::formatDuree((int) $conducteur->total_duration);
+
+        return response()->json($etat);
     }
 
     public function store(Request $request): RedirectResponse

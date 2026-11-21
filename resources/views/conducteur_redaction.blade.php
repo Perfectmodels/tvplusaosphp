@@ -12,28 +12,9 @@
     $dateEdition = old('date_edition', $conducteur->date_edition ? $conducteur->date_edition->format('Y-m-d') : now()->toDateString());
     $statutBadge = $conducteur->statut_badge_html;
     $user = auth()->user();
-    $sequencesJson = $sequences->map(function ($s) use ($user, $conducteur) {
-        return [
-            'id' => $s->id,
-            'can_delete' => !$conducteur->date_locked_at && ($user?->can('deleteSequencePresentateur', $s) ?? false),
-            'code_conducteur' => $s->code_conducteur_affichage,
-            'code_ligne' => $s->code_ligne,
-            'conducteur_id' => $s->conducteur_id,
-            'date_edition' => optional($s->conducteur)->date_edition ? $s->conducteur->date_edition->format('d/m/Y') : '',
-            'position' => $s->position,
-            'title' => $s->title,
-            'type_html' => $s->type_badge_html,
-            'debut_hm' => $s->debut_hm,
-            'fin_hm' => $s->fin_hm,
-            'duree_hm' => $s->duree_hm,
-            'duration_seconds' => (int) ($s->duration_seconds ?? 0),
-            'intervenant_nom' => $s->intervenant_nom_affichage ?: '—',
-            'fonction' => $s->intervenant_fonction_affichage ?: ($s->fonction_text ?: '—'),
-            'alerte_info' => (bool) $s->alerte_info,
-            'has_notes' => trim(strip_tags((string) $s->notes_presentateur)) !== '',
-            'notes_preview' => \Illuminate\Support\Str::limit(strip_tags((string) $s->notes_presentateur), 140),
-        ];
-    })->values()->all();
+    $sequencesJson = $sequences
+        ->map(fn ($sequence) => \App\Support\ConducteurSequenceView::row($sequence, $conducteur, $user))
+        ->values()->all();
     // Keep visible actions aligned with the server-side permission.
     $canAnyCreate = $user && ! $conducteur->date_locked_at
         && $user->can('crudSequencePresentateur', \App\Models\Sequence::class);
@@ -46,6 +27,7 @@
         csrfToken: @json(csrf_token()),
         routes: {
             reorder: @json(route('conducteurs.reorder', $conducteur)),
+            liveState: @json(route('conducteurs.chef_edition.live_state', $conducteur)),
             seqPayloadBase: @json(route('conducteurs.sequences.payload', '_SEQ_')),
             seqStore: @json(route('conducteurs.sequences.store')),
             seqUpdateBase: @json(route('conducteurs.sequences.update', '_SEQ_')),
@@ -160,9 +142,17 @@
                 <h3 class="text-sm font-bold uppercase tracking-wide text-on-surface">Programmation du conducteur</h3>
                 <p class="mt-0.5 text-xs text-on-surface-variant">
                     <span x-text="sequences.length">0</span> élément(s) · utilisez les flèches pour changer l’ordre.
+                    <span class="ml-2" role="status" aria-live="polite"
+                          x-text="syncError ? 'Synchronisation indisponible' : (lastSyncAt ? '· Actualisé à ' + lastSyncAt : '')"></span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
+                <button type="button" @click="refreshFromServer(false)" :disabled="syncing || ordreEnCours"
+                        class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline/30 bg-white px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container disabled:opacity-50"
+                        aria-label="Actualiser les séquences du conducteur">
+                    <i :class="syncing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate'" aria-hidden="true"></i>
+                    Actualiser
+                </button>
                 @if($canAnyCreate)
                     <button type="button" @click="ouvrirModaleSequence(null)"
                             class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-container hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -257,7 +247,11 @@
                     <template x-if="sequences.length === 0">
                         <tr>
                             <td colspan="9" class="p-16 text-center text-secondary italic">
-                                Aucun élément dans le conducteur. Cliquez sur <span class="font-semibold text-primary">« Ajouter un élément »</span> pour commencer.
+                                @if($canAnyCreate)
+                                    Aucun élément dans le conducteur. Cliquez sur <span class="font-semibold text-primary">« Ajouter un élément »</span> pour commencer.
+                                @else
+                                    Aucune séquence programmée pour cette édition.
+                                @endif
                             </td>
                         </tr>
                     </template>
@@ -339,16 +333,17 @@
 
                             {{-- #9 Actions --}}
                             <td class="p-3 text-center">
-                                <div class="flex gap-2 justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                    <button @click="ouvrirModaleSequence(seq.id)"
-                                            title="Éditer"
-                                            class="text-secondary hover:text-primary transition-colors p-2.5 rounded-lg">
-                                        <i class="fa-solid fa-pen-to-square"></i>
+                                <div x-show="seq.can_edit || seq.can_delete" x-cloak
+                                     class="flex gap-2 justify-center opacity-100 transition-opacity">
+                                    <button type="button" x-show="seq.can_edit" @click="ouvrirModaleSequence(seq.id)"
+                                            :aria-label="'Modifier ' + seq.title" title="Modifier la séquence"
+                                            class="min-h-11 min-w-11 text-secondary hover:text-primary transition-colors p-2.5 rounded-lg">
+                                        <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                                     </button>
-                                    <button @click="supprimerSequence(seq.id, seq.title)"
-                                            title="Supprimer"
-                                            class="text-secondary hover:text-error transition-colors p-2.5 rounded-lg">
-                                        <i class="fa-regular fa-trash-can"></i>
+                                    <button type="button" x-show="seq.can_delete" @click="supprimerSequence(seq.id, seq.title)"
+                                            :aria-label="'Supprimer ' + seq.title" title="Supprimer la séquence"
+                                            class="min-h-11 min-w-11 text-secondary hover:text-error transition-colors p-2.5 rounded-lg">
+                                        <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             </td>
@@ -391,7 +386,7 @@
              @click.stop>
             <div class="p-5 border-b border-outline-variant flex justify-between items-center sticky top-0 bg-white z-10">
                 <h3 id="chef-sequence-modal-title" class="font-bold text-lg" x-text="modeEdition ? 'Éditer un élément' : 'Ajouter un élément'">Ajouter un élément</h3>
-                <button @click="fermerToutesModales()"
+                <button type="button" @click="fermerToutesModales()" aria-label="Fermer la fenêtre de la séquence"
                         class="w-11 h-11 rounded-full hover:bg-surface-container flex items-center justify-center text-secondary">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
@@ -400,8 +395,9 @@
             <div x-show="modaleChargement" x-cloak role="status" class="p-5 text-sm text-on-surface-variant"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Chargement de la séquence…</div>
             <div x-show="modaleErreur" x-cloak role="alert" class="mx-5 mt-4 rounded-lg border border-error/30 bg-error/5 p-3 text-sm text-error" x-text="modaleErreur"></div>
             <form x-show="!modaleChargement" @submit.prevent="soumettreModaleSequence()"
+                  @input="modaleErreur = ''"
                   method="POST"
-                  class="p-5 grid grid-cols-1 gap-4">
+                  class="p-5 grid grid-cols-1 gap-4 md:grid-cols-2">
                 @csrf
 
                 <input type="hidden" name="conducteur_id" value="{{ $conducteur->id }}">
@@ -409,8 +405,8 @@
 
                 {{-- Titre (OBLIGATOIRE) --}}
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Titre ou Sujet <span class="text-error">*</span></label>
-                    <input type="text" name="title"
+                    <label for="chef-sequence-title" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Titre ou Sujet <span class="text-error">*</span></label>
+                    <input id="chef-sequence-title" type="text" name="title" maxlength="255"
                            x-model="formSeq.title"
                            required
                            class="w-full border border-outline rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
@@ -419,8 +415,8 @@
 
                 {{-- Type + Durée --}}
                 <div>
-                    <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Type <span class="text-error">*</span></label>
-                    <select name="type"
+                    <label for="chef-sequence-type" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Type <span class="text-error">*</span></label>
+                    <select id="chef-sequence-type" name="type"
                             x-model="formSeq.type"
                             required
                             class="w-full border border-outline rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors">
@@ -433,7 +429,7 @@
                     <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Durée</label>
                     <div class="grid grid-cols-2 gap-2">
                         <div class="relative">
-                            <input type="number" name="duration_minutes"
+                            <input id="chef-sequence-minutes" type="number" name="duration_minutes" aria-label="Durée en minutes"
                                    x-model.number="formSeq.duration_minutes"
                                    min="0" max="600"
                                    class="w-full border border-outline rounded-lg px-3 py-2.5 pr-8 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
@@ -441,7 +437,7 @@
                             <span class="absolute right-3 top-2.5 text-secondary text-xs">min</span>
                         </div>
                         <div class="relative">
-                            <input type="number" name="duration_seconds"
+                            <input id="chef-sequence-seconds" type="number" name="duration_seconds" aria-label="Durée en secondes"
                                    x-model.number="formSeq.duration_seconds"
                                    min="0" max="59"
                                    class="w-full border border-outline rounded-lg px-3 py-2.5 pr-8 focus:ring-2 focus:ring-primary focus:border-primary outline-none"
@@ -451,12 +447,23 @@
                     </div>
                 </div>
 
+                {{-- Position d'insertion : cohérente avec la réorganisation des séquences. --}}
+                <div x-show="!modeEdition" x-cloak class="md:col-span-2">
+                    <label for="chef-sequence-position" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                        Position dans l'émission
+                    </label>
+                    <input id="chef-sequence-position" type="number" name="position"
+                           x-model.number="formSeq.position" min="1" :max="sequences.length + 1" step="1"
+                           class="w-full rounded-lg border border-outline px-3 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 sm:max-w-36">
+                    <p class="mt-1 text-xs text-on-surface-variant">Les séquences suivantes seront décalées automatiquement.</p>
+                </div>
+
                 {{-- Invités (1 ou plusieurs) + Fonction --}}
-                <div>
-                    <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Intervenants invités</label>
+                <div class="md:col-span-2">
+                    <label for="chef-invite-search" class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">Intervenants invités</label>
                     <div class="flex gap-2">
                         <div class="flex-1 min-w-0 relative">
-                            <input type="search"
+                            <input id="chef-invite-search" type="search"
                                    x-model="inviteSearch"
                                    @focus="inviteDropdownOpen = true"
                                    @click.outside="inviteDropdownOpen = false"
@@ -534,7 +541,7 @@
                         @foreach($journalistes as $j)
                             <option value="{{ $j->id }}">
                                 {{ $j->nomComplet }}
-                                @if($j->fonction) <span class="text-secondary">({{ $j->fonction?->label() }})</span>@endif
+                                @if($j->fonction) ({{ $j->fonction?->label() }})@endif
                             </option>
                         @endforeach
                     </select>
@@ -557,14 +564,14 @@
                               placeholder="Ex : Accentuer les 3 innovations majeures pour les citoyens"></textarea>
                 </div>
 
-                <div class="md:col-span-2 pt-4 flex flex-wrap justify-end gap-3 border-t border-outline-variant mt-2">
+                <div class="md:col-span-2 sticky bottom-0 z-10 -mx-5 mt-2 flex flex-wrap justify-end gap-3 border-t border-outline-variant bg-white px-5 py-4">
                     <button type="button"
                             @click="fermerToutesModales()"
                             class="px-5 py-2.5 border border-outline rounded-lg text-secondary hover:bg-surface-container font-semibold transition-colors">
                         Annuler
                     </button>
                     <button type="submit"
-                            :disabled="envoiEnCours || modaleChargement || !!modaleErreur"
+                            :disabled="envoiEnCours || modaleChargement"
                             class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-container font-semibold transition-colors disabled:opacity-60 flex items-center gap-2">
                         <i x-show="envoiEnCours" class="fa-solid fa-spinner fa-spin"></i>
                         <span x-text="modeEdition ? 'Enregistrer modifications' : 'Ajouter au conducteur'"></span>
