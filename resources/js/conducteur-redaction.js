@@ -16,6 +16,10 @@ export default function conducteurRedaction() {
         modeReorg: false,
         ordreEnCours: false,
         modaleSequenceVisible: false,
+        modaleChargement: false,
+        modaleErreur: '',
+        _modalInitialForm: null,
+        _modalRequestId: 0,
         modaleSuppressionVisible: false,
         modeEdition: false,
         sequenceEnCoursId: null,
@@ -65,6 +69,9 @@ export default function conducteurRedaction() {
             this.sequenceEnCoursId = seqId;
             this.envoiEnCours = false;
             this.inviteSelection = '';
+            this.modaleErreur = '';
+            this.modaleChargement = !!seqId;
+            const requestId = ++this._modalRequestId;
 
             this.formSeq = {
                 title: '',
@@ -87,7 +94,8 @@ export default function conducteurRedaction() {
                 })
                     .then(r => r.ok ? r.json() : null)
                     .then(json => {
-                        if (!json) return;
+                        if (requestId !== this._modalRequestId) return;
+                        if (!json) throw new Error('Chargement impossible.');
                         this.formSeq = {
                             title: json.title || '',
                             type: json.type_value || 'SUJET',
@@ -101,21 +109,31 @@ export default function conducteurRedaction() {
                             angle_editorial: json.angle_editorial || '',
                             alerte_info: !!json.alerte_info,
                         };
+                        this._modalInitialForm = JSON.stringify(this.formSeq);
                     })
-                    .catch(() => {});
+                    .catch(error => { if (requestId === this._modalRequestId) this.modaleErreur = error.message || 'Chargement impossible.'; })
+                    .finally(() => { if (requestId === this._modalRequestId) this.modaleChargement = false; });
             }
 
+            if (!seqId) this._modalInitialForm = JSON.stringify(this.formSeq);
             this.modaleSequenceVisible = true;
         },
 
-        fermerToutesModales() {
+        fermerToutesModales(force = false) {
+            if (this.envoiEnCours && !force) return;
+            if (!force && this.modaleSequenceVisible && !this.modaleChargement && this._modalInitialForm
+                && JSON.stringify(this.formSeq) !== this._modalInitialForm
+                && !window.confirm('Abandonner les modifications non enregistrées ?')) return;
+            this._modalRequestId++;
             this.modaleSequenceVisible = false;
             this.modaleSuppressionVisible = false;
-            this.envoiEnCours = false;
+            this.modaleErreur = '';
+            this.modaleChargement = false;
+            this._modalInitialForm = null;
             this.sequenceEnCoursId = null;
         },
 
-        // ============ INVITÉS (1 ou plusieurs par sujet) ============
+                // ============ INVITÉS (1 ou plusieurs par sujet) ============
         ajouterInvite() {
             const id = Number(this.inviteSelection);
             if (!id) return;
@@ -180,7 +198,12 @@ export default function conducteurRedaction() {
         },
 
         async soumettreModaleSequence() {
-            if (!this.formSeq.title || this.envoiEnCours) return;
+            if (!this.formSeq.title || this.envoiEnCours || this.modaleChargement) return;
+            this.modaleErreur = '';
+            if (['DEBAT', 'DÉBAT'].includes(String(this.formSeq.type || '').toUpperCase()) && (this.formSeq.intervenant_ids.length < 2 || this.formSeq.intervenant_ids.length > 4)) {
+                this.modaleErreur = 'Un débat exige entre 2 et 4 intervenants.';
+                return;
+            }
             this.envoiEnCours = true;
 
             const formData = new FormData();
@@ -230,6 +253,7 @@ export default function conducteurRedaction() {
 
                 if (resp.ok) {
                     this.showToast((json && json.message) || (this.modeEdition ? 'Modifications enregistrées.' : 'Élément ajouté au conducteur.'), 'success');
+                    this.fermerToutesModales(true);
                     setTimeout(() => window.location.reload(), 400);
                     return;
                 }
@@ -237,13 +261,16 @@ export default function conducteurRedaction() {
                 // 422 (validation) / 403 (droits) / 419 (csrf) → message serveur
                 if (json && json.errors) {
                     const premier = Object.values(json.errors)[0];
-                    this.showToast(Array.isArray(premier) ? premier[0] : String(premier), 'error');
+                    this.modaleErreur = Array.isArray(premier) ? premier[0] : String(premier);
+                    this.showToast(this.modaleErreur, 'error');
                     return;
                 }
-                this.showToast((json && json.message) || 'Une erreur est survenue.', 'error');
+                this.modaleErreur = (json && json.message) || 'Une erreur est survenue.';
+                this.showToast(this.modaleErreur, 'error');
             } catch (e) {
                 console.error(e);
-                this.showToast('Erreur réseau.', 'error');
+                this.modaleErreur = 'Erreur réseau, veuillez réessayer.';
+                this.showToast(this.modaleErreur, 'error');
             } finally {
                 this.envoiEnCours = false;
             }
@@ -392,6 +419,8 @@ export default function conducteurRedaction() {
                     this.showToast('Ordre mis à jour.', 'success');
                 }
             } catch (e) {
+                this.showToast('Ordre non enregistré. Actualisation du conducteur.', 'error');
+                window.location.reload();
                 console.error('Reorder error', e);
             } finally {
                 this.ordreEnCours = false;

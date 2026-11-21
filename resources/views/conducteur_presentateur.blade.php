@@ -459,7 +459,7 @@
                     </div>
                 </template>
 
-                <div class="hidden min-[2200px]:block overflow-x-auto">
+                <div class="hidden min-[1280px]:block overflow-x-auto">
                 <table x-show="sequences.length > 0" class="w-full border-collapse text-left text-xs" id="cp-table">
                     <thead class="sticky top-0 z-10 bg-white/95 backdrop-blur">
                         <tr class="border-b border-outline-variant/50">
@@ -572,7 +572,7 @@
                 </table>
                 </div>
 
-                <div x-show="sequences.length > 0" id="cp-card-list" class="min-[2200px]:hidden p-3 sm:p-4 lg:p-5">
+                <div x-show="sequences.length > 0" id="cp-card-list" class="min-[1280px]:hidden p-3 sm:p-4 lg:p-5">
                     <div class="space-y-3">
                         <template x-for="s in visibleSequences" :key="`card-${s.id}`">
                             <article class="group rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
@@ -1055,7 +1055,7 @@
         {{--  MODALE CRUD SÉQUENCE 6 CHAMPS (Ajout / Modification)                 --}}
         {{-- ==================================================================== --}}
         <template x-if="showModal">
-        <div x-cloak
+        <div x-cloak role="dialog" aria-modal="true" aria-labelledby="cp-modal-title"
              class="fixed inset-0 z-[100] flex items-center justify-center p-4"
              x-transition.opacity.duration.200ms
              @keydown.escape.window="closeModal()">
@@ -1067,7 +1067,7 @@
 
                 <header class="px-6 py-4 border-b border-outline/15 flex flex-wrap items-center justify-between gap-3 bg-surface-container-lowest">
                     <div>
-                        <h3 class="text-base font-bold text-on-surface"
+                        <h3 id="cp-modal-title" class="text-base font-bold text-on-surface"
                             x-text="modalTitle"></h3>
                         <p class="text-xs text-on-surface-variant mt-0.5 m-0 p-0 leading-relaxed"
                            x-text="modalSubtitle"></p>
@@ -1080,7 +1080,7 @@
                     </button>
                 </header>
 
-                <form @submit.prevent="saveSequence()" class="flex-1 overflow-y-auto p-6 space-y-5" novalidate>
+                <form id="cp-sequence-form" @submit.prevent="saveSequence()" class="flex-1 overflow-y-auto p-6 space-y-5" novalidate>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div class="md:col-span-1">
                             <label class="block text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
@@ -1193,7 +1193,8 @@
                                      class="absolute z-30 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-outline bg-white shadow-lg">
                                     @foreach($intervenants as $int)
                                         <button type="button"
-                                                x-show="intervenantCorrespondCp('{{ addslashes(strtolower((is_object($int->civilite) && method_exists($int->civilite, 'label') ? $int->civilite->label() : (string)($int->civilite?->value ?? $int->civilite)).' '.$int->prenom.' '.$int->nom.' '.($int->fonction ?? ''))) }}', inviteSearchCp)"
+                                                 x-show="intervenantCorrespondCp($el.dataset.search || '', inviteSearchCp)"
+                                                 data-search="{{ mb_strtolower(trim($int->prenom.' '.$int->nom.' '.($int->fonction ?? ''))) }}"
                                                 @click="inviteSelectionCp = {{ $int->id }}; ajouterInviteCp();"
                                                 :disabled="seqForm.intervenant_ids.includes({{ $int->id }})"
                                                 class="w-full text-left px-3 py-2 hover:bg-surface-container transition-colors flex items-center justify-between gap-2 border-b border-outline/10 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -1242,15 +1243,15 @@
                     </div>
                 </form>
 
-                <footer class="px-6 py-4 border-t border-outline/15 bg-surface-container-lowest flex flex-wrap items-center justify-end gap-3">
+                <footer class="sticky bottom-0 px-6 py-4 border-t border-outline/15 bg-surface-container-lowest flex flex-wrap items-center justify-end gap-3">
                     <button type="button"
                             @click="closeModal()"
                             class="px-5 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 font-medium text-sm">
                         Annuler
                     </button>
                     <button
-                        type="button"
-                        @click="saveSequence()"
+                        type="submit"
+                        form="cp-sequence-form"
                         :disabled="isSavingSeq"
                         class="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-primary text-white hover:bg-primary-container hover:text-primary font-semibold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         <i :class="isSavingSeq ? 'fa-solid fa-spinner fa-spin' : 'fa-regular fa-floppy-disk'" class="text-xs"></i>

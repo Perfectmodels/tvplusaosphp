@@ -153,17 +153,6 @@
     {{-- Bulles pop-up : message en cours + messages du public --}}
     @include('_partials.bulles-conducteur')
 
-    {{-- QR public, messages et antenne/notes : un même bloc visible dès l'ouverture --}}
-    <section class="mt-6 grid items-start gap-4 lg:grid-cols-2">
-        <div class="min-w-0 space-y-4">
-            @if((string) $conducteur->type === 'emission')
-                @include('_partials.chef-qr-public', ['conducteur' => $conducteur, 'interactionMessages' => $interactionMessages ?? collect(), 'interactionMessagesCount' => $interactionMessagesCount ?? 0])
-            @endif
-            @include('_partials.conducteur-sondage', ['conducteur' => $conducteur, 'sondage' => $sondage ?? null])
-        </div>
-        @include('_partials.chef-antenne-panel', ['conducteur' => $conducteur])
-    </section>
-
     {{-- =========== TABLE SECTION =========== --}}
 <section class="bg-white border border-outline-variant rounded-xl overflow-hidden shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant bg-surface-container-low px-5 py-4">
@@ -380,23 +369,37 @@
         </div>
     </section>
 
+    {{-- Outils complémentaires : visibles après la programmation principale. --}}
+    {{-- QR public, messages et antenne/notes : un même bloc visible dès l'ouverture --}}
+    <section class="mt-6 grid items-start gap-4 lg:grid-cols-2">
+        <div class="min-w-0 space-y-4">
+            @if((string) $conducteur->type === 'emission')
+                @include('_partials.chef-qr-public', ['conducteur' => $conducteur, 'interactionMessages' => $interactionMessages ?? collect(), 'interactionMessagesCount' => $interactionMessagesCount ?? 0])
+            @endif
+            @include('_partials.conducteur-sondage', ['conducteur' => $conducteur, 'sondage' => $sondage ?? null])
+        </div>
+        @include('_partials.chef-antenne-panel', ['conducteur' => $conducteur])
+    </section>
+
     {{-- =========== MODALE CRÉATION / ÉDITION SÉQUENCE =========== --}}
     <div x-show="modaleSequenceVisible"
          x-transition.opacity.duration.200ms
-         class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+         role="dialog" aria-modal="true" aria-labelledby="chef-sequence-modal-title" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
          @click.self="fermerToutesModales()"
          style="display:none;">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90dvh] overflow-y-auto"
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94dvh] overflow-y-auto"
              @click.stop>
             <div class="p-5 border-b border-outline-variant flex justify-between items-center sticky top-0 bg-white z-10">
-                <h3 class="font-bold text-lg" x-text="modeEdition ? 'Éditer un élément' : 'Ajouter un élément'">Ajouter un élément</h3>
+                <h3 id="chef-sequence-modal-title" class="font-bold text-lg" x-text="modeEdition ? 'Éditer un élément' : 'Ajouter un élément'">Ajouter un élément</h3>
                 <button @click="fermerToutesModales()"
                         class="w-11 h-11 rounded-full hover:bg-surface-container flex items-center justify-center text-secondary">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <form @submit.prevent="soumettreModaleSequence()"
+            <div x-show="modaleChargement" x-cloak role="status" class="p-5 text-sm text-on-surface-variant"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Chargement de la séquence…</div>
+            <div x-show="modaleErreur" x-cloak role="alert" class="mx-5 mt-4 rounded-lg border border-error/30 bg-error/5 p-3 text-sm text-error" x-text="modaleErreur"></div>
+            <form x-show="!modaleChargement" @submit.prevent="soumettreModaleSequence()"
                   method="POST"
                   class="p-5 grid grid-cols-1 gap-4">
                 @csrf
@@ -463,7 +466,8 @@
                                  class="absolute z-30 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-outline bg-white shadow-lg">
                                 @foreach($intervenants as $int)
                                     <button type="button"
-                                            x-show="intervenantCorrespond('{{ addslashes(strtolower($int->nomComplet.' '.($int->fonction ?? ''))) }}', inviteSearch)"
+                                             x-show="intervenantCorrespond($el.dataset.search || '', inviteSearch)"
+                                             data-search="{{ mb_strtolower($int->nomComplet.' '.($int->fonction ?? '')) }}"
                                             @click="inviteSelection = '{{ $int->id }}'; ajouterInvite();"
                                             :disabled="formSeq.intervenant_ids.includes({{ $int->id }})"
                                             class="w-full text-left px-3 py-2 hover:bg-surface-container transition-colors flex items-center justify-between gap-2 border-b border-outline/10 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -560,7 +564,7 @@
                         Annuler
                     </button>
                     <button type="submit"
-                            :disabled="envoiEnCours"
+                            :disabled="envoiEnCours || modaleChargement || !!modaleErreur"
                             class="px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-primary-container font-semibold transition-colors disabled:opacity-60 flex items-center gap-2">
                         <i x-show="envoiEnCours" class="fa-solid fa-spinner fa-spin"></i>
                         <span x-text="modeEdition ? 'Enregistrer modifications' : 'Ajouter au conducteur'"></span>

@@ -90,13 +90,13 @@ class ConducteurPresentateurReorderTest extends TestCase
         $this->assertStringContainsString("x-data='{ presentateurId:", $html);
         $this->assertStringContainsString("x-init='initialize({", $html);
         $this->assertLessThan(
-            strpos($html, 'Programmation du conducteur'),
             strpos($html, 'Antenne & notes présentateur'),
-            'Le panneau notes/chrono doit apparaître avant le tableau.'
+            strpos($html, 'Programmation du conducteur'),
+            'Le tableau de programmation doit apparaître avant les outils antenne.'
         );
         $this->assertStringContainsString('QR code public', $html);
-        $this->assertStringContainsString('max-w-lg', $html);
-        $this->assertStringNotContainsString('max-w-2xl', $html);
+        $this->assertStringContainsString('max-w-4xl', $html);
+        $this->assertStringNotContainsString('max-w-lg', $html);
         $this->assertStringNotContainsString('flex flex-col gap-6 h-full', $html);
         $this->assertStringNotContainsString('data-bulk-all', $html);
         $this->assertStringNotContainsString('data-bulk-bar', $html);
@@ -147,6 +147,58 @@ class ConducteurPresentateurReorderTest extends TestCase
 
         $this->assertSame(1, (int) $deuxieme->fresh()->position);
         $this->assertSame(2, (int) $premiere->fresh()->position);
+    }
+
+    public function test_reordre_presentateur_refuse_un_identifiant_manquant_ou_duplique(): void
+    {
+        $admin = $this->acteur('admin');
+        $conducteur = $this->conducteur($admin);
+        $premiere = $conducteur->sequences()->create(['title' => 'Premier', 'type' => 'SUJET', 'position' => 1]);
+        $deuxieme = $conducteur->sequences()->create(['title' => 'Deuxième', 'type' => 'SUJET', 'position' => 2]);
+
+        $this->actingAs($admin)
+            ->patchJson(route('conducteurs.presentateur.sequence.reorder', $conducteur), [
+                'ordered_ids' => [$premiere->id],
+            ])->assertUnprocessable();
+
+        $this->patchJson(route('conducteurs.presentateur.sequence.reorder', $conducteur), [
+            'ordered_ids' => [$premiere->id, $premiere->id],
+        ])->assertUnprocessable();
+
+        $this->assertSame(1, (int) $premiere->fresh()->position);
+        $this->assertSame(2, (int) $deuxieme->fresh()->position);
+    }
+
+    public function test_reordre_presentateur_persiste_la_nouvelle_position_et_les_horaires(): void
+    {
+        $admin = $this->acteur('admin');
+        $conducteur = $this->conducteur($admin);
+        $premiere = $conducteur->sequences()->create(['title' => 'Premier', 'type' => 'SUJET', 'position' => 1, 'duration_seconds' => 120]);
+        $deuxieme = $conducteur->sequences()->create(['title' => 'Deuxième', 'type' => 'SUJET', 'position' => 2, 'duration_seconds' => 60]);
+
+        $this->actingAs($admin)
+            ->patchJson(route('conducteurs.presentateur.sequence.reorder', $conducteur), [
+                'ordered_ids' => [$deuxieme->id, $premiere->id],
+            ])->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonCount(2, 'sequences');
+
+        $this->assertSame(1, (int) $deuxieme->fresh()->position);
+        $this->assertSame(2, (int) $premiere->fresh()->position);
+    }
+
+    public function test_dialogs_expose_loading_error_and_desktop_table_breakpoint(): void
+    {
+        $admin = $this->acteur('admin');
+        $conducteur = $this->conducteur($admin);
+        $this->actingAs($admin);
+
+        $chef = $this->get(route('conducteurs.chef_edition', ['conducteurId' => $conducteur->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('modaleChargement', $chef);
+        $this->assertStringContainsString('modaleErreur', $chef);
+        $this->assertStringContainsString('aria-modal="true"', $chef);
     }
 
     private function acteur(string $role): User
