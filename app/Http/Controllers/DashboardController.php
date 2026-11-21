@@ -19,6 +19,7 @@ use App\Models\Sequence;
 use App\Models\User;
 use App\Models\VeilleSubject;
 use App\Services\RoleDashboardService;
+use App\Services\AdminDashboardAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -53,7 +54,7 @@ class DashboardController extends Controller
         TypeSequenceEnum::Conclusion,
     ];
 
-    public function index(Request $request, RoleDashboardService $workspaces): View
+    public function index(Request $request, RoleDashboardService $workspaces, AdminDashboardAnalyticsService $analytics): View
     {
         $user = $request->user();
 
@@ -104,11 +105,15 @@ class DashboardController extends Controller
         $vueDediee = $this->vueTableauDeBord($activeDashboardRole);
         if ($vueDediee !== null) {
             $extras = $this->extrasTableauxDeBord($user, $activeDashboardRole);
+            $adminData = in_array($activeDashboardRole, ['admin', 'superadmin'], true)
+                && $user->hasAllPermissions(['users.view', 'activity_logs.view', 'sources_veille.view'])
+                ? ['adminAnalytics' => $analytics->build($filters)]
+                : [];
 
             return view($vueDediee, $data + [
                 'extrasTableauxDeBord' => $extras['blocs'],
                 'tableauDeBordChiffres' => $extras['chiffres'],
-            ]);
+            ] + $adminData);
         }
 
         return view('dashboard_role', $data);
