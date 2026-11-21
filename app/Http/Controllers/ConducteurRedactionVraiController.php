@@ -481,23 +481,9 @@ final class ConducteurRedactionVraiController extends Controller
         }
 
         $deletedId = (int) $sequence->id;
-        $deletedPos = (int) $sequence->position;
         $titre = $sequence->title;
+        // The Sequence::deleted model hook already compacts positions and updates durations.
         $sequence->delete();
-
-        // Bulk compact positions 1..N
-        Sequence::where('conducteur_id', $conducteur->id)
-            ->where('position', '>', $deletedPos)
-            ->orderBy('position')
-            ->eachById(function (Sequence $s) {
-                $s->timestamps = false;
-                $s->updateQuietly(['position' => $s->position - 1]);
-            }, 100);
-
-        try {
-            ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
-        } catch (\Throwable) {
-        }
 
         ConducteurChanged::dispatch((int) $conducteur->id);
 
@@ -644,10 +630,11 @@ final class ConducteurRedactionVraiController extends Controller
         }
 
         $jr = $s->journalisteResponsable;
-        $jrNom = $jr?->nom_complet ?? '—';
+        // The view uses x-html here; escape database values before fixed markup.
+        $jrNom = e($jr?->nom_complet ?? '—');
         $jrRole = $jr?->user?->role;
         if ($jr && ($jrRole === 'journaliste_chef' || $jrRole === 'jri')) {
-            $jrNom .= ' <small class="opacity-70">('.mb_strtoupper($jrRole).')</small>';
+            $jrNom .= ' <small class="opacity-70">('.e(mb_strtoupper($jrRole)).')</small>';
         }
 
         $emissionNom = $s->relationLoaded('emission')
