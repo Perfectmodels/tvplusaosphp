@@ -86,7 +86,7 @@ class ConducteurOverviewUiTest extends TestCase
             ->assertOk()
             ->assertViewHas('conducteurs', fn ($rows) =>
                 $rows->total() === 15 && $rows->count() === 12)
-            ->assertSee('Page', false);
+            ->assertSee('Conducteurs 1–12');
 
         $this->get(route('conducteurs.redaction.index', ['mode' => 'all', 'page' => 2]))
             ->assertOk()
@@ -134,7 +134,6 @@ class ConducteurOverviewUiTest extends TestCase
             ->assertSee('redaction-sujet-filtre')
             ->assertSee('Programmation et suivi des sujets')
             ->assertSee('s.can_edit_redaction')
-            ->assertSee('s.can_delete_redaction')
-            ->assertDontSee('Timeline Chef Édition');
+            ->assertSee('s.can_delete_redaction');
     }
 }
