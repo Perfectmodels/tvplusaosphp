@@ -9,11 +9,14 @@ use App\Events\ConducteurChanged;
 use App\Models\Conducteur;
 use App\Models\Intervenant;
 use App\Models\Sequence;
+use App\Enums\TypeSequenceEnum;
 use App\Services\ConducteurCalculatorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 final class SequenceController extends Controller
 {
@@ -38,18 +41,10 @@ final class SequenceController extends Controller
         $valid = $request->validate([
             'conducteur_id' => ['required', 'integer', 'exists:conducteurs,id'],
             'title' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'string', 'max:50'],
+            'type' => ['required', Rule::enum(TypeSequenceEnum::class)],
             'duration_minutes' => ['sometimes', 'integer', 'min:0', 'max:600'],
             'duration_seconds' => ['sometimes', 'integer', 'min:0', 'max:36000'],
-            'intervenant_ids' => ['sometimes', 'nullable', 'array', function ($attribute, $value, $fail) use ($request) {
-                if (strtoupper((string) $request->input('type')) !== 'DÉBAT') {
-                    return;
-                }
-                $n = is_array($value) ? count($value) : 0;
-                if ($n < 2 || $n > 4) {
-                    $fail('Un débat doit comporter entre 2 et 4 intervenants.');
-                }
-            }],
+            'intervenant_ids' => ['sometimes', 'nullable', 'array'],
             'intervenant_ids.*' => ['integer', 'distinct', 'exists:intervenants,id'],
             'nom_prenom_text' => ['sometimes', 'nullable', 'string', 'max:255'],
             'fonction_text' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -62,6 +57,7 @@ final class SequenceController extends Controller
 
         $conducteur = Conducteur::findOrFail((int) $valid['conducteur_id']);
         $this->autoriserCreation($conducteur);
+        $this->validerDebat($valid['type'], $valid['intervenant_ids'] ?? []);
 
         $duree = null;
         if (isset($valid['duration_minutes'])) {
@@ -69,6 +65,8 @@ final class SequenceController extends Controller
         } elseif (isset($valid['duration_seconds'])) {
             $duree = (int) $valid['duration_seconds'];
         }
+
+        $this->validerDuree($duree);
 
         $seq = \Illuminate\Support\Facades\DB::transaction(function () use ($valid, $duree, $conducteur): Sequence {
             // Reserve the requested position under one conductor-level lock.
@@ -123,18 +121,10 @@ final class SequenceController extends Controller
 
         $valid = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'type' => ['sometimes', 'required', 'string', 'max:50'],
+            'type' => ['sometimes', 'required', Rule::enum(TypeSequenceEnum::class)],
             'duration_minutes' => ['sometimes', 'integer', 'min:0', 'max:600'],
             'duration_seconds' => ['sometimes', 'integer', 'min:0', 'max:36000'],
-            'intervenant_ids' => ['sometimes', 'nullable', 'array', function ($attribute, $value, $fail) use ($request) {
-                if (strtoupper((string) $request->input('type')) !== 'DÉBAT') {
-                    return;
-                }
-                $n = is_array($value) ? count($value) : 0;
-                if ($n < 2 || $n > 4) {
-                    $fail('Un débat doit comporter entre 2 et 4 intervenants.');
-                }
-            }],
+            'intervenant_ids' => ['sometimes', 'nullable', 'array'],
             'intervenant_ids.*' => ['integer', 'distinct', 'exists:intervenants,id'],
             'nom_prenom_text' => ['sometimes', 'nullable', 'string', 'max:255'],
             'fonction_text' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -145,12 +135,23 @@ final class SequenceController extends Controller
             'masque' => ['sometimes', 'boolean'],
         ]);
 
+        $typeEffectif = $valid['type']
+            ?? ($sequence->type instanceof TypeSequenceEnum ? $sequence->type->value : (string) $sequence->type);
+        $invitesEffectifs = array_key_exists('intervenant_ids', $valid)
+            ? ($valid['intervenant_ids'] ?? [])
+            : $sequence->intervenants()->pluck('id')->all();
+        $this->validerDebat($typeEffectif, $invitesEffectifs);
+
         $payload = collect($valid)->except(['duration_minutes', 'duration_seconds', 'intervenant_ids'])->toArray();
 
         if (isset($valid['duration_minutes'])) {
             $payload['duration_seconds'] = ((int) $valid['duration_minutes']) * 60 + ((int) ($valid['duration_seconds'] ?? 0));
         } elseif (isset($valid['duration_seconds'])) {
             $payload['duration_seconds'] = (int) $valid['duration_seconds'];
+        }
+
+        if (array_key_exists('duration_seconds', $payload)) {
+            $this->validerDuree((int) $payload['duration_seconds']);
         }
 
         $sequence->update($payload);
@@ -270,6 +271,7 @@ final class SequenceController extends Controller
         return response()->json([
             'id' => $sequence->id,
             'conducteur_id' => $sequence->conducteur_id,
+            'position' => (int) $sequence->position,
             'title' => $sequence->title,
             'type_value' => is_object($sequence->type) ? $sequence->type->value : (string) $sequence->type,
             'duration_seconds' => (int) $sequence->duration_seconds,
@@ -361,6 +363,29 @@ final class SequenceController extends Controller
      * The generic sequence endpoints serve both editorial and broadcast conducteurs.
      * Always authorize against the conductor AND the workflow-specific sequence policy.
      */
+    private function validerDebat(string $type, array $intervenants): void
+    {
+        if ($type !== TypeSequenceEnum::Debat->value) {
+            return;
+        }
+
+        $nombre = count($intervenants);
+        if ($nombre < 2 || $nombre > 4) {
+            throw ValidationException::withMessages([
+                'intervenant_ids' => 'Un débat doit comporter entre 2 et 4 intervenants.',
+            ]);
+        }
+    }
+
+    private function validerDuree(?int $secondes): void
+    {
+        if ($secondes !== null && ($secondes < 1 || $secondes > 36000)) {
+            throw ValidationException::withMessages([
+                'duration_minutes' => 'La durée doit être comprise entre 1 seconde et 600 minutes.',
+            ]);
+        }
+    }
+
     private function autoriserCreation(Conducteur $conducteur): void
     {
         Gate::authorize('view', $conducteur);
