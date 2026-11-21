@@ -44,12 +44,12 @@
 
         <div class="rounded-2xl border border-outline-variant bg-white p-3 sm:p-5">
         @if($conducteurs->contains(fn ($item) => auth()->user()->can('delete', $item)))
-    @include('_partials.bulk-delete-toolbar', ['resource' => 'conducteurs-redaction'])
-@endif
+            @include('_partials.bulk-delete-toolbar', ['resource' => 'conducteurs-redaction'])
+        @endif
 
         @if($conducteurs->count() === 0)
             <x-ui.empty-state icon="fa-newspaper"
-                title="{{ ($allDates ?? false) ? 'Aucun conducteur ne correspond à votre recherche' : 'Aucun conducteur de rédaction pour cette date' }}"
+                title="{{ ($allDates ?? false) ? 'Aucun conducteur ne correspond à votre recherche' : 'Aucun conducteur de rédaction pour cette date.' }}"
                 description="{{ ($allDates ?? false) ? 'Essayez un autre nom ou réinitialisez les filtres.' : 'Sélectionnez une autre date pour retrouver les sujets et leur suivi de production.' }}">
                 @can('create', \App\Models\Conducteur::class)
                     <x-slot:actions>
