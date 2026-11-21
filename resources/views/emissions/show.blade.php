@@ -14,13 +14,15 @@
 @endphp
 @section('content')
     @php
-        $coul7 = Str::limit($emission->couleur_habillage ?? ($emission->theme_color ?? '#0054cd'), 7, '');
+        $rawColor = (string) ($emission->couleur_habillage ?? $emission->theme_color ?? '#0054cd');
+        $coul7 = preg_match('/^#[0-9a-fA-F]{6}$/', $rawColor) ? $rawColor : '#0054cd';
+        $conducteursEmission = $emission->conducteurs->filter(fn ($c) => (string) $c->type === 'emission')->sortByDesc('date_edition');
     @endphp
     <!-- HERO -->
     <div class="card-surface overflow-hidden -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 mb-6 !rounded-none border-x-0 border-t-0">
         <div class="h-2 w-full" style="background:{{ $coul7 }};"></div>
-        <div class="p-8">
-            <div class="flex items-start gap-6 flex-wrap">
+        <div class="p-4 sm:p-6 lg:p-8">
+            <div class="flex items-start gap-4 sm:gap-6 flex-wrap">
                 <div class="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-4xl font-black shadow-inner shrink-0" style="background:linear-gradient(135deg,{{ $coul7 }},{{ $coul7 }}cc);">
                     {{ $emission->initiales }}
                 </div>
@@ -31,11 +33,11 @@
                         @if($emission->categorie)<span class="badge-purple text-xs px-2.5 py-1 rounded-md font-medium">{{ $emission->categorie }}</span>@endif
                         @if($emission->cible_audience)<span class="badge-indigo text-xs px-2.5 py-1 rounded-md font-medium">{{ $emission->cible_audience }}</span>@endif
                     </div>
-                    <h2 class="text-3xl font-bold text-slate-900 mb-1">{{ $emission->nom }}</h2>
+                    <h2 class="mb-1 text-2xl font-bold text-on-surface sm:text-3xl">{{ $emission->nom }}</h2>
                     @if($emission->sous_titre)<p class="text-lg text-slate-500 mb-3">{{ $emission->sous_titre }}</p>@endif
                     @if($emission->description)<p class="text-sm text-slate-600 max-w-3xl leading-relaxed">{{ $emission->description }}</p>@endif
                 </div>
-                <div class="grid grid-cols-2 gap-3 sm:ml-auto w-full sm:w-auto">
+                <div class="grid w-full grid-cols-2 gap-3 sm:ml-auto sm:w-auto">
                     <div class="card-surface !p-3 text-center min-w-[100px]">
                         <div class="text-xs uppercase text-slate-400 tracking-wider mb-1">Horaire</div>
                         <div class="text-lg font-bold text-slate-900">{{ $emission->horaireLabel }}</div>
@@ -66,7 +68,12 @@
                     <a href="{{ route('emissions.edit', $emission) }}" class="btn-primary"><i class="fa-solid fa-pen mr-2"></i> Modifier l'émission</a>
                 @endcan
                 @can('create', \App\Models\Conducteur::class)
-                    <button class="btn-outline"><i class="fa-solid fa-plus mr-2"></i> Nouveau conducteur</button>
+                    @if($emission->is_active)
+                        <a href="{{ route('conducteurs.emission.create', ['emission_id' => $emission->id, 'date' => today()->toDateString()]) }}"
+                           class="ui-action ui-action--primary">
+                            <i class="fa-solid fa-plus mr-1" aria-hidden="true"></i> Nouveau conducteur
+                        </a>
+                    @endif
                 @endcan
                 @can('delete', $emission)
                     <form method="POST" action="{{ route('emissions.destroy', $emission) }}"
@@ -183,13 +190,28 @@
         <!-- CONDUCTEURS RECENTS -->
         <div class="card-surface lg:col-span-3">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between mb-4 gap-3 flex-wrap">
-                <div class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list text-primary"></i><h3 class="font-bold text-slate-900">Conducteurs associés ({{ $emission->nombreConducteurs }})</h3></div>
+                <div class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list text-primary" aria-hidden="true"></i><h3 class="font-bold text-on-surface">Conducteurs associés ({{ $conducteursEmission->count() }})</h3></div>
                 @can('create', \App\Models\Conducteur::class)
-                    <button class="btn-primary !px-3 !py-2.5 min-h-[44px] text-xs"><i class="fa-solid fa-plus mr-1.5"></i>Nouveau conducteur</button>
+                    @if($emission->is_active)
+                        <a href="{{ route('conducteurs.emission.create', ['emission_id' => $emission->id, 'date' => today()->toDateString()]) }}"
+                           class="ui-action ui-action--primary">
+                            <i class="fa-solid fa-plus mr-1" aria-hidden="true"></i> Nouveau conducteur
+                        </a>
+                    @endif
                 @endcan
             </div>
-            @if($emission->conducteurs->count()===0)
-                <div class="px-6 py-12 text-center text-slate-400 text-sm italic">Aucun conducteur rédigé pour cette émission.</div>
+            @if($conducteursEmission->isEmpty())
+                <x-ui.empty-state title="Aucun conducteur pour cette émission"
+                        description="Les prochaines éditions préparées apparaîtront ici." icon="fa-list-check">
+                        @can('create', \App\Models\Conducteur::class)
+                            @if($emission->is_active)
+                                <x-slot:actions>
+                                    <a href="{{ route('conducteurs.emission.create', ['emission_id' => $emission->id]) }}"
+                                       class="ui-action ui-action--primary">Préparer un conducteur</a>
+                                </x-slot:actions>
+                            @endif
+                        @endcan
+                    </x-ui.empty-state>
             @else
                 <div class="overflow-x-auto">
                     <table data-mobile-cards class="min-w-full text-sm">
@@ -203,13 +225,18 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
-                            @foreach($emission->conducteurs->take(10) as $c)
+                            @foreach($conducteursEmission->take(10) as $c)
                                 <tr class="hover:bg-slate-50/60">
-                                    <td class="px-6 py-3 text-slate-500 font-mono">#{{ $c->id }}</td>
-                                    <td class="px-6 py-3 font-medium text-slate-800">{{ $c->title }}</td>
-                                    <td class="px-6 py-3 text-slate-600">{{ $c->scheduled_at?->format('d/m/Y H:i') ?? '—' }}</td>
-                                    <td class="px-6 py-3"><span class="badge-blue text-xs px-2 py-1 rounded-md capitalize">{{ $c->status ?? 'draft' }}</span></td>
-                                    <td class="px-6 py-3 text-right"><button class="text-primary hover:text-primary-600 text-xs font-semibold px-2 py-2 inline-flex min-h-[44px]">Ouvrir</button></td>
+                                    <td class="px-6 py-3 font-mono text-xs text-on-surface-variant">{{ $c->code_conducteur_affichage }}</td>
+                                    <td class="px-6 py-3 font-medium text-on-surface">{{ $c->nom ?: $emission->nom }}</td>
+                                    <td class="px-6 py-3 text-on-surface-variant">{{ $c->date_edition?->format('d/m/Y') ?? 'À renseigner' }}</td>
+                                    <td class="px-6 py-3">{!! $c->statut_badge_html !!}</td>
+                                    <td class="px-6 py-3 text-right">
+                                        @can('view', $c)
+                                            <a href="{{ route('conducteurs.emission.show', $c) }}"
+                                               class="ui-action ui-action--outline">Ouvrir le conducteur</a>
+                                        @endcan
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
