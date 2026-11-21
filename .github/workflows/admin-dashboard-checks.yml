@@ -19,7 +19,7 @@ permissions:
 jobs:
   runner:
     name: Runner availability diagnostics
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Verify runner can start
         run: |
@@ -31,8 +31,7 @@ jobs:
 
   php:
     name: PHP lint and analytics feature tests
-    runs-on: ubuntu-latest
-    needs: runner
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -59,8 +58,7 @@ jobs:
 
   assets:
     name: Vite production build
-    runs-on: ubuntu-latest
-    needs: runner
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
