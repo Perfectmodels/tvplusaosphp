@@ -490,7 +490,7 @@
             <div class="flex flex-wrap gap-3">
                 <a href="{{ route('parcours-intervenants.index', ['intervenant_id' => $intervenant->id]) }}" class="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-surface border border-outline-variant rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-highest transition-colors">
                     <span class="material-symbols-outlined text-[18px]">event</span>
-                    Booker
+                    Gérer le parcours
                 </a>
                 @if($intervenant->telephone_1)
                 <a href="tel:{{ $intervenant->telephone_1 }}" class="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-surface border border-outline-variant rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-highest transition-colors">
@@ -498,17 +498,22 @@
                     Appeler
                 </a>
                 @endif
-                <a href="{{ route('intervenants.qr.regenerate', $intervenant) }}" onclick="event.preventDefault();document.getElementById('regen-qr-form').submit();" class="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-surface border border-outline-variant rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-highest transition-colors">
-                    <span class="material-symbols-outlined text-[18px] text-amber-600">replay</span>
-                    Régénérer QR
-                </a>
+                @can('update', $intervenant)
+                    <button type="submit" form="regen-qr-form"
+                            class="ui-action ui-action--outline"
+                            data-confirm="Régénérer le badge QR de cet intervenant ?"
+                            data-confirm-text="Le précédent code d'accès cessera de fonctionner.">
+                        <span class="material-symbols-outlined text-[18px] text-warning" aria-hidden="true">replay</span>
+                        Régénérer QR
+                    </button>
+                @endcan
                 <a href="{{ route('intervenants.qr', $intervenant) }}" class="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-surface border border-outline-variant rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-highest transition-colors">
                     <span class="material-symbols-outlined text-[18px]">qr_code</span>
-                    Générer QR Code
+                    Voir le badge QR
                 </a>
                 <a href="{{ route('intervenants.index') }}" class="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-surface border border-outline-variant rounded-lg text-label-md font-label-md text-on-surface hover:bg-surface-container-highest transition-colors ml-auto">
-                    <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-                    Exporter PDF
+                    <span class="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_back</span>
+                    Retour au répertoire
                 </a>
             </div>
             <form id="regen-qr-form" method="POST" action="{{ route('intervenants.qr.regenerate', $intervenant) }}" class="hidden">@csrf</form>
