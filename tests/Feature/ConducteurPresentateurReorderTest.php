@@ -149,6 +149,58 @@ class ConducteurPresentateurReorderTest extends TestCase
         $this->assertSame(2, (int) $premiere->fresh()->position);
     }
 
+    public function test_reordre_presentateur_refuse_un_identifiant_manquant_ou_duplique(): void
+    {
+        $admin = $this->acteur('admin');
+        $conducteur = $this->conducteur($admin);
+        $premiere = $conducteur->sequences()->create(['title' => 'Premier', 'type' => 'SUJET', 'position' => 1]);
+        $deuxieme = $conducteur->sequences()->create(['title' => 'Deuxième', 'type' => 'SUJET', 'position' => 2]);
+
+        $this->actingAs($admin)
+            ->patchJson(route('conducteurs.presentateur.sequence.reorder', $conducteur), [
+                'ordered_ids' => [$premiere->id],
+            ])->assertUnprocessable();
+
+        $this->patchJson(route('conducteurs.presentateur.sequence.reorder', $conducteur), [
+            'ordered_ids' => [$premiere->id, $premiere->id],
+        ])->assertUnprocessable();
+
+        $this->assertSame(1, (int) $premiere->fresh()->position);
+        $this->assertSame(2, (int) $deuxieme->fresh()->position);
+    }
+
+    public function test_reordre_presentateur_persiste_la_nouvelle_position_et_les_horaires(): void
+    {
+        $admin = $this->acteur('admin');
+        $conducteur = $this->conducteur($admin);
+        $premiere = $conducteur->sequences()->create(['title' => 'Premier', 'type' => 'SUJET', 'position' => 1, 'duration_seconds' => 120]);
+        $deuxieme = $conducteur->sequences()->create(['title' => 'Deuxième', 'type' => 'SUJET', 'position' => 2, 'duration_seconds' => 60]);
+
+        $this->actingAs($admin)
+            ->patchJson(route('conducteurs.presentateur.sequence.reorder', $conducteur), [
+                'ordered_ids' => [$deuxieme->id, $premiere->id],
+            ])->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonCount(2, 'sequences');
+
+        $this->assertSame(1, (int) $deuxieme->fresh()->position);
+        $this->assertSame(2, (int) $premiere->fresh()->position);
+    }
+
+    public function test_dialogs_expose_loading_error_and_desktop_table_breakpoint(): void
+    {
+        $admin = $this->acteur('admin');
+        $conducteur = $this->conducteur($admin);
+        $this->actingAs($admin);
+
+        $chef = $this->get(route('conducteurs.chef_edition', ['conducteurId' => $conducteur->id]))
+            ->assertOk()->getContent();
+
+        $this->assertStringContainsString('modaleChargement', $chef);
+        $this->assertStringContainsString('modaleErreur', $chef);
+        $this->assertStringContainsString('aria-modal="true"', $chef);
+    }
+
     private function acteur(string $role): User
     {
         $user = User::factory()->create();
