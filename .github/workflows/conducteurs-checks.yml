@@ -1,0 +1,61 @@
+name: Conducteurs security and regression checks
+
+on:
+  pull_request:
+    paths:
+      - "app/Http/Controllers/SequenceController.php"
+      - "app/Http/Controllers/ConducteurRedactionController.php"
+      - "app/Http/Controllers/ConducteurRedactionVraiController.php"
+      - "app/Http/Controllers/ConducteurPresentateurController.php"
+      - "resources/js/conducteur-redaction-vrai.js"
+      - "resources/js/chef-antenne-panel.js"
+      - "resources/views/_partials/chef-antenne-panel.blade.php"
+      - "resources/views/conducteur_redaction.blade.php"
+      - "resources/views/conducteur_redaction_show.blade.php"
+      - "tests/Feature/ConducteurSecurityAndOrderingTest.php"
+      - ".github/workflows/conducteurs-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Laravel conductor tests and Vite build
+    runs-on: ubuntu-22.04
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ":memory:"
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, pdo_sqlite, sqlite3, gd, zip, curl, dom, xml, exif, bcmath
+          coverage: none
+          tools: composer:v2
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: PHP syntax
+        run: |
+          php -l app/Http/Controllers/SequenceController.php
+          php -l app/Http/Controllers/ConducteurRedactionController.php
+          php -l app/Http/Controllers/ConducteurRedactionVraiController.php
+          php -l app/Http/Controllers/ConducteurPresentateurController.php
+          php -l tests/Feature/ConducteurSecurityAndOrderingTest.php
+      - name: Run conductor regression tests
+        run: php artisan test --filter='ConducteurSecurityAndOrderingTest|ConducteurRealtimeTest|ConducteurPresentateurReorderTest|SequenceUpdateRedirectChainTest'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Check JavaScript syntax
+        run: |
+          node --check resources/js/conducteur-redaction-vrai.js
+          node --check resources/js/chef-antenne-panel.js
+      - name: Build Vite assets
+        run: npm ci --no-audit --no-fund && npm run build
