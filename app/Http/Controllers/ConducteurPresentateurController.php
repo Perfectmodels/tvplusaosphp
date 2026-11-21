@@ -229,6 +229,7 @@ class ConducteurPresentateurController extends Controller
                 'antenne_started_at' => now(),
                 'antenne_ended_at' => null,
                 'antenne_offset_sec' => $enPause ? $offset : 0,
+                'status' => StatutConducteurEnum::En_direct,
             ]);
 
             if (! $enPause) {
@@ -295,6 +296,10 @@ class ConducteurPresentateurController extends Controller
             'antenne_offset_sec' => 0,
             'antenne_ended_at' => null,
             'active_sequence_id' => null,
+            'status' => $conducteur->status === StatutConducteurEnum::Cloture
+                || $conducteur->status === StatutConducteurEnum::En_direct
+                    ? StatutConducteurEnum::Valide
+                    : $conducteur->status,
         ]);
 
         foreach ($conducteur->sequences()->get() as $sequence) {
@@ -355,6 +360,7 @@ class ConducteurPresentateurController extends Controller
                 'antenne_started_at' => null,
                 'antenne_offset_sec' => (int) $conducteur->antenne_total_sec,
                 'antenne_ended_at' => now(),
+                'status' => StatutConducteurEnum::Cloture,
             ]);
         }
 
