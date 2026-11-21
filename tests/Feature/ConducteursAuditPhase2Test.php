@@ -226,4 +226,47 @@ class ConducteursAuditPhase2Test extends TestCase
 
         $this->assertSame($seq->id, (int) Sondage::firstOrFail()->sequence_id);
     }
+    public function test_confirmed_guest_can_be_assigned_only_to_a_sequence_of_its_edition(): void
+    {
+        $emission = $this->emission();
+        $correct = $this->conducteur($emission, '2026-12-03');
+        $other = $this->conducteur($emission, '2026-12-04');
+        $target = $this->sequence($correct, 1);
+        $foreign = $this->sequence($other, 1);
+        $p = $this->parcours($emission, '2026-12-03');
+        $p->update([
+            'conducteur_id' => $correct->id,
+            'confirme_at' => now(),
+        ]);
+
+        $this->actingAs($this->user());
+
+        $this->postJson(route('parcours-intervenants.sequence.assign', $p), [
+            'sequence_id' => $foreign->id,
+        ])->assertUnprocessable();
+
+        $this->postJson(route('parcours-intervenants.sequence.assign', $p), [
+            'sequence_id' => $target->id,
+        ])->assertOk()->assertJsonPath('parcours.statut_affectation', 'affecte_sequence');
+
+        $this->assertSame($target->id, (int) $p->fresh()->sequence_id);
+        $this->assertNotNull($p->fresh()->sequence_intervenant_id);
+    }
+
+    public function test_unconfirmed_guest_cannot_be_assigned_to_a_sequence(): void
+    {
+        $emission = $this->emission();
+        $conducteur = $this->conducteur($emission, '2026-12-03');
+        $sequence = $this->sequence($conducteur, 1);
+        $p = $this->parcours($emission, '2026-12-03');
+        $p->update(['conducteur_id' => $conducteur->id]);
+
+        $this->actingAs($this->user())
+            ->postJson(route('parcours-intervenants.sequence.assign', $p), [
+                'sequence_id' => $sequence->id,
+            ])->assertUnprocessable();
+
+        $this->assertNull($p->fresh()->sequence_intervenant_id);
+    }
+
 }
