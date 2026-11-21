@@ -134,11 +134,13 @@
 </head>
 <body class="app-shell bg-background text-on-background font-body-sm antialiased h-screen flex overflow-hidden">
 
+    <a href="#app-main" class="ui-skip-link">Aller au contenu principal</a>
+
     {{-- Sidebar gauche w-64 FIXED (inclus Logo + œil + slogan + 10 liens nav + User footer) --}}
     @include('_partials.sidebar')
 
     {{-- Overlay mobile quand le drawer est ouvert --}}
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
+    <div id="sidebar-overlay" aria-hidden="true" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
 
     {{-- Zone principale FUNCTIONAL (STRICTE prototype HTML dashboard.html#L198-L237) --}}
     <div class="flex-1 flex flex-col lg:pl-64 w-full min-w-0 h-full relative">
@@ -159,7 +161,7 @@
         ])
 
         {{-- Canvas / Contenu page (overflow-y-auto + scrollbar-hide + bg surface gris #F4F7F9 prototype) --}}
-        <main class="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8 scrollbar-hide {{ request()->routeIs('dashboard') ? 'bg-[#fbfcfe]' : 'bg-[#F4F7F9]' }}">
+        <main id="app-main" tabindex="-1" class="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8 scrollbar-hide {{ request()->routeIs('dashboard') ? 'bg-[#fbfcfe]' : 'bg-[#F4F7F9]' }}">
 
             @include('_partials.notifications-stack')
             @include('_partials.notifications-globales')
@@ -312,6 +314,7 @@
 
         var sidebar = document.getElementById('app-sidebar');
         var overlay = document.getElementById('sidebar-overlay');
+        var toggle = document.getElementById('sidebar-toggle');
         if (!sidebar) return;
 
         function estFerme() { return sidebar.classList.contains('-translate-x-full'); }
@@ -319,34 +322,70 @@
         function ouvrir() {
             sidebar.classList.remove('-translate-x-full');
             if (overlay) overlay.classList.remove('hidden');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'true');
+                toggle.setAttribute('aria-label', 'Fermer le menu de navigation');
+            }
+            if (window.innerWidth < 1024) {
+                document.documentElement.classList.add('ui-sidebar-open');
+                (sidebar.querySelector('[data-sidebar-close]') || sidebar).focus({ preventScroll: true });
+            }
         }
-        function fermer() {
+
+        function fermer(restoreFocus) {
             sidebar.classList.add('-translate-x-full');
             if (overlay) overlay.classList.add('hidden');
+            document.documentElement.classList.remove('ui-sidebar-open');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Ouvrir le menu de navigation');
+            }
+            if (restoreFocus && toggle && window.innerWidth < 1024) toggle.focus();
         }
 
-        document.addEventListener('click', function (e) {
-            var cible = e.target && typeof e.target.closest === 'function' ? e.target : null;
+        document.addEventListener('click', function (event) {
+            var cible = event.target && typeof event.target.closest === 'function' ? event.target : null;
             if (!cible) return;
-
             if (cible.closest('#sidebar-toggle')) {
-                e.preventDefault();
-                if (estFerme()) { ouvrir(); } else { fermer(); }
+                event.preventDefault();
+                if (estFerme()) ouvrir(); else fermer(true);
                 return;
             }
-            if (overlay && !overlay.classList.contains('hidden')) {
-                if (cible === overlay || cible.closest('#app-sidebar a')) {
-                    fermer();
-                }
+            if (cible.closest('[data-sidebar-close]')) {
+                event.preventDefault();
+                fermer(true);
+                return;
+            }
+            if (overlay && !overlay.classList.contains('hidden')
+                && (cible === overlay || cible.closest('#app-sidebar a'))) {
+                fermer(false);
             }
         });
 
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') fermer();
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && overlay && !overlay.classList.contains('hidden')) {
+                event.preventDefault();
+                fermer(true);
+            }
+        });
+
+        // Keep keyboard navigation inside the mobile drawer while it is open.
+        sidebar.addEventListener('keydown', function (event) {
+            if (event.key !== 'Tab' || window.innerWidth >= 1024 || estFerme()) return;
+            var candidates = Array.from(sidebar.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(function (el) { return el.getClientRects().length > 0; });
+            if (!candidates.length) { event.preventDefault(); sidebar.focus(); return; }
+            var first = candidates[0], last = candidates[candidates.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault(); first.focus();
+            }
         });
 
         window.addEventListener('resize', function () {
-            if (window.innerWidth >= 1024) fermer();
+            if (window.innerWidth >= 1024) fermer(false);
         }, { passive: true });
     })();
     </script>
