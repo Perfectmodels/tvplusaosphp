@@ -343,12 +343,12 @@ $remixStatusMap = [
                 <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                     <div>
                         <label for="veille-edit-title" class="mb-2 block text-sm font-semibold text-on-surface">Titre *</label>
-                        <input id="veille-edit-title" name="title" required value="{{ old('title',$subject->title) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                        <input name="title" id="veille-edit-title" required value="{{ old('title',$subject->title) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                     </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label for="veille-edit-category" class="mb-2 block text-sm font-semibold text-on-surface">Catégorie</label>
-                            <select id="veille-edit-category" name="category" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                            <select name="category" id="veille-edit-category" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                                 <option value="">— Non classé —</option>
                                 @foreach(\App\Enums\PoleRubriqueEnum::selectOptions() as $v => $l)
                                 <option value="{{ $v }}" @selected((string) old('category', $subject->category?->value) === $v)>{{ $l }}</option>
@@ -357,7 +357,7 @@ $remixStatusMap = [
                         </div>
                         <div>
                             <label for="veille-edit-status" class="mb-2 block text-sm font-semibold text-on-surface">Statut</label>
-                            <select id="veille-edit-status" name="status" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base">
+                            <select name="status" id="veille-edit-status" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base">
                                 @foreach(['draft'=>'Brouillon','pending'=>'En attente','approved'=>'Retenu','rejected'=>'Rejeté','archived'=>'Archivé'] as $v=>$l)
                                 <option value="{{ $v }}" @selected(old('status',$subject->status)===$v)>{{ $l }}</option>
                                 @endforeach
@@ -366,16 +366,16 @@ $remixStatusMap = [
                     </div>
                     <div>
                         <label for="veille-edit-summary" class="mb-2 block text-sm font-semibold text-on-surface">Résumé</label>
-                        <textarea id="veille-edit-summary" name="summary" rows="3" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">{{ old('summary',$subject->summary) }}</textarea>
+                        <textarea name="summary" id="veille-edit-summary" rows="3" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">{{ old('summary',$subject->summary) }}</textarea>
                     </div>
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label for="veille-edit-priority" class="mb-2 block text-sm font-semibold text-on-surface">Priorité (1-10)</label>
-                            <input type="number" min="1" max="10" id="veille-edit-priority" name="priority" value="{{ old('priority',$subject->priority) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                            <input type="number" min="1" max="10" name="priority" id="veille-edit-priority" value="{{ old('priority',$subject->priority) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                         </div>
                         <div>
                             <label for="veille-edit-url" class="mb-2 block text-sm font-semibold text-on-surface">URL source</label>
-                            <input id="veille-edit-url" name="url" type="url" value="{{ old('url',$subject->url) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                            <input name="url" id="veille-edit-url" type="url" value="{{ old('url',$subject->url) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                         </div>
                     </div>
                 </div>
