@@ -20,9 +20,12 @@ $joursVals = is_array($joursVals) ? $joursVals : [];
 
     <!-- WIZARD TABS (4 étapes confirmées: INFO / PRES / DIFFUSION / RESUME) -->
     <div class="card-surface">
-        <div class="flex items-start flex-wrap" role="tablist" data-wizard-tabs>
+        <div class="flex items-start flex-wrap" role="tablist" aria-label="Étapes de création de l'émission" data-wizard-tabs>
             @foreach(['1'=>'Infos générales','2'=>'Présentateurs','3'=>'Paramètres diffusion','4'=>'Résumé & validation'] as $n=>$lib)
-                <button type="button" data-step="{{ $n }}" @class(['wizard-tab flex flex-col items-center shrink-0 w-36 sm:w-40 group']) role="tab" aria-selected="{{ $n==='1'?'true':'false' }}" tabindex="{{ $n==='1'?'0':'-1' }}">
+                <button type="button" data-step="{{ $n }}" id="emission-tab-{{ $n }}"
+                        aria-controls="emission-panel-{{ $n }}"
+                        @class(['wizard-tab flex flex-col items-center shrink-0 w-36 sm:w-40 group'])
+                        role="tab" aria-selected="{{ $n==='1'?'true':'false' }}" tabindex="{{ $n==='1'?'0':'-1' }}">
                     <span @class(['step-circle w-10 h-10 rounded-full border-2 flex items-center justify-center font-semibold text-sm bg-white transition group-aria-selected:bg-primary group-aria-selected:text-white group-aria-selected:border-primary border-slate-300 text-slate-500'])>{{ $n }}</span>
                     <span @class(['step-label mt-2 text-xs text-center leading-snug transition group-aria-selected:text-primary group-aria-selected:font-semibold text-slate-500'])>{{ $lib }}</span>
                 </button>
@@ -32,7 +35,7 @@ $joursVals = is_array($joursVals) ? $joursVals : [];
     </div>
 
     <!-- STEP 1 : INFOS GENERALES -->
-    <section data-panel="1" class="card-surface">
+    <section id="emission-panel-1" data-panel="1" class="card-surface" role="tabpanel" aria-labelledby="emission-tab-1" tabindex="0">
         <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-primary-container text-primary flex items-center justify-center font-bold text-sm">1</div>
             <div>
@@ -121,7 +124,7 @@ $joursVals = is_array($joursVals) ? $joursVals : [];
     </section>
 
     <!-- STEP 2 : PRESENTATEURS -->
-    <section data-panel="2" class="card-surface hidden">
+    <section id="emission-panel-2" data-panel="2" class="card-surface hidden" role="tabpanel" aria-labelledby="emission-tab-2" tabindex="0" hidden>
         <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-primary-container text-primary flex items-center justify-center font-bold text-sm">2</div>
             <div>
@@ -225,7 +228,7 @@ $joursVals = is_array($joursVals) ? $joursVals : [];
     </section>
 
     <!-- STEP 3 : PARAMETRES DIFFUSION -->
-    <section data-panel="3" class="card-surface hidden">
+    <section id="emission-panel-3" data-panel="3" class="card-surface hidden" role="tabpanel" aria-labelledby="emission-tab-3" tabindex="0" hidden>
         <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-primary-container text-primary flex items-center justify-center font-bold text-sm">3</div>
             <div>
@@ -329,7 +332,7 @@ $joursVals = is_array($joursVals) ? $joursVals : [];
     </section>
 
     <!-- STEP 4 : RESUME -->
-    <section data-panel="4" class="card-surface hidden">
+    <section id="emission-panel-4" data-panel="4" class="card-surface hidden" role="tabpanel" aria-labelledby="emission-tab-4" tabindex="0" hidden>
         <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-primary-container text-primary flex items-center justify-center font-bold text-sm">4</div>
             <div>

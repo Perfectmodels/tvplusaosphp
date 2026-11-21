@@ -31,7 +31,7 @@
 <header class="ui-topbar bg-surface/80 dark:bg-background/80 backdrop-blur-md min-h-14 sm:min-h-16 h-auto shrink-0 py-2 sm:py-3 sticky top-0 z-40 shadow-sm dark:shadow-none flex flex-wrap justify-between items-center w-full px-3 sm:px-8 gap-2 sm:gap-3 border-b border-outline-variant">
     <div class="ui-topbar-heading flex items-center gap-4 flex-1 min-w-0 max-sm:w-full max-sm:flex-none">
         {{-- Burger : ouvre le drawer de navigation sur mobile/tablette --}}
-        <button id="sidebar-toggle" type="button"
+        <button id="sidebar-toggle" type="button" aria-controls="app-sidebar" aria-expanded="false"
                 class="lg:hidden shrink-0 inline-flex items-center justify-center p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"
                 aria-label="Ouvrir le menu de navigation">
             <span class="material-symbols-outlined">menu</span>
@@ -44,10 +44,10 @@
         </div>
     </div>
 
-    <div class="ui-topbar-actions flex items-center gap-1 sm:gap-2 flex-nowrap overflow-x-auto justify-end max-sm:w-full max-sm:order-last scrollbar-hide flex-1">
+    <div class="ui-topbar-actions flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-2 overflow-visible sm:overflow-x-auto justify-end max-sm:w-full max-sm:order-last scrollbar-hide flex-1">
         {{-- Boutons d'actions spécifiques page (Export/Ajouter etc) — accepte string HTML OU tableau structuré --}}
         @if($headerActions)
-            <div class="flex items-center gap-3 border-r border-outline-variant pr-4">
+            <div class="flex flex-wrap items-center gap-2 border-r border-outline-variant pr-2 sm:pr-4">
                 @if(is_string($headerActions))
                     {!! $headerActions !!}
                 @elseif(is_array($headerActions))
@@ -83,19 +83,19 @@
         @endif
 
         {{-- Actions globales : liens réels et filtre par date d’édition. --}}
-        <a href="{{ route('dashboard') }}#workspace-priorities" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low" title="Priorités de mon espace" aria-label="Voir les priorités de mon espace"><span class="material-symbols-outlined" aria-hidden="true">flag</span><span class="text-xs font-medium">Priorités</span></a>
+        <a href="{{ route('dashboard') }}#workspace-priorities" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary" title="Priorités de mon espace" aria-label="Voir les priorités de mon espace"><span class="material-symbols-outlined" aria-hidden="true">flag</span><span class="text-xs font-medium">Priorités</span></a>
         @can('viewAny', \App\Models\WorkspaceDossier::class)
-        <a href="{{ route('workspace.notifications') }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low" title="Notifications des dossiers partagés" aria-label="Notifications des dossiers partagés"><span class="material-symbols-outlined" aria-hidden="true">notifications</span><span data-workspace-unread data-count-url="{{ route('workspace.unread') }}" @if(! $workspaceUnread) hidden @endif class="rounded bg-red-100 px-1.5 text-xs font-bold text-red-800">{{ $workspaceUnread }}</span></a>
+        <a href="{{ route('workspace.notifications') }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary" title="Notifications des dossiers partagés" aria-label="Notifications des dossiers partagés"><span class="material-symbols-outlined" aria-hidden="true">notifications</span><span data-workspace-unread data-count-url="{{ route('workspace.unread') }}" @if(! $workspaceUnread) hidden @endif class="rounded bg-red-100 px-1.5 text-xs font-bold text-red-800">{{ $workspaceUnread }}</span></a>
         @endcan
         @if(request()->routeIs('dashboard') && isset($activeDashboardRole))
-        <a href="{{ route('dashboard', ['role' => $activeDashboardRole]) }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low"><span class="material-symbols-outlined" aria-hidden="true">calendar_today</span><span class="text-xs font-medium">Aujourd’hui</span></a>
-        <button type="button" id="workspace-filters-toggle" onclick="const panel = document.getElementById('workspace-filters'); if (panel) { panel.open = !panel.open; }" aria-controls="workspace-filters" aria-expanded="{{ request()->hasAny(['from', 'to', 'emission_id', 'department', 'q', 'status']) ? 'true' : 'false' }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low"><span class="material-symbols-outlined" aria-hidden="true">filter_list</span><span class="text-xs font-medium">Filtres</span></button>
+        <a href="{{ route('dashboard', ['role' => $activeDashboardRole]) }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary"><span class="material-symbols-outlined" aria-hidden="true">calendar_today</span><span class="text-xs font-medium">Aujourd’hui</span></a>
+        <button type="button" id="workspace-filters-toggle" onclick="const panel = document.getElementById('workspace-filters'); if (panel) { panel.open = !panel.open; }" aria-controls="workspace-filters" aria-expanded="{{ request()->hasAny(['from', 'to', 'emission_id', 'department', 'q', 'status']) ? 'true' : 'false' }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary"><span class="material-symbols-outlined" aria-hidden="true">filter_list</span><span class="text-xs font-medium">Filtres</span></button>
         @elseif($canBrowseConducteurs)
-        <a href="{{ route($editionIndexRoute, array_merge($editionFilters ?? [], ['date' => today()->toDateString()])) }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low" title="Conducteurs du jour" aria-label="Voir les conducteurs du jour">
+        <a href="{{ route($editionIndexRoute, array_merge($editionFilters ?? [], ['date' => today()->toDateString()])) }}" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary" title="Conducteurs du jour" aria-label="Voir les conducteurs du jour">
             <span class="material-symbols-outlined" aria-hidden="true">calendar_today</span>
             <span class="text-xs font-medium">Aujourd’hui</span>
         </a>
-        <button type="button" id="edition-filter-toggle" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low" title="Choisir une date d’édition" aria-label="Filtrer les conducteurs par date" aria-controls="edition-filter-panel" aria-expanded="false">
+        <button type="button" id="edition-filter-toggle" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary" title="Choisir une date d’édition" aria-label="Filtrer les conducteurs par date" aria-controls="edition-filter-panel" aria-expanded="false">
             <span class="material-symbols-outlined" aria-hidden="true">filter_list</span>
             <span class="text-xs font-medium">Date</span>
         </button>

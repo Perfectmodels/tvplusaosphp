@@ -265,15 +265,24 @@ export default function chefAntennePanel() {
         },
 
         ouvrirPrompter() {
+            this._prompterReturnFocus = document.activeElement;
             this.prompterOpen = true;
-            this.prompterPaused = false;
-            this.$nextTick(() => this.startPrompterLoop());
+            this.prompterPaused = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            this.$nextTick(() => {
+                this.$refs.prompterPanel?.focus();
+                this.startPrompterLoop();
+            });
         },
 
         fermerPrompter() {
             this.prompterOpen = false;
             this.stopPrompterLoop();
             this._drag = null;
+            const previous = this._prompterReturnFocus;
+            this._prompterReturnFocus = null;
+            this.$nextTick(() => {
+                if (previous?.isConnected) previous.focus();
+            });
         },
 
         startDrag(event) {

@@ -1,7 +1,12 @@
 {{-- Sidebar TV+A OS Material3 — UNIFORME 100% SUR TOUTES LES PAGES: LOGO → ŒIL → MENU --}}
-<nav id="app-sidebar" class="bg-surface dark:bg-background w-64 h-screen fixed left-0 top-0 overflow-y-auto border-r border-outline-variant dark:border-surface-variant flex flex-col h-full py-stack-md shrink-0 z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+<nav id="app-sidebar" aria-label="Navigation principale" tabindex="-1" class="bg-surface dark:bg-background w-64 h-screen fixed left-0 top-0 overflow-y-auto border-r border-outline-variant dark:border-surface-variant flex flex-col h-full py-stack-md shrink-0 z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
     <!-- BLOC HEADER UNIFORME: [1] Logo TV+A OS  →  [2] Œil Bleu photo  →  [3] Subtitle -->
-    <div class="px-6 mb-8 flex flex-col gap-2">
+    <div class="relative px-6 mb-8 flex flex-col gap-2">
+        <button type="button" data-sidebar-close
+                class="absolute right-3 top-0 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary lg:hidden"
+                aria-label="Fermer le menu principal">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
         {{-- [1] LOGO TV+A OS — WORDMARK UNIQUE, IDENTIQUE SUR TOUT LE SITE --}}
         <div class="ui-sidebar-logo flex items-center gap-3 mb-1">
             <div class="w-11 h-11 rounded-2xl bg-primary-container text-on-primary flex items-center justify-center font-bold shadow-md shadow-primary/15">
@@ -70,13 +75,14 @@
             <div x-data="{ openConducteurs: {{ request()->routeIs('conducteurs.*') ? 'true' : 'false' }} }" class="group">
                 <button type="button"
                     @click="openConducteurs = !openConducteurs"
+                    :aria-expanded="String(openConducteurs)" aria-controls="tv-sidebar-conducteurs"
                     class="w-full px-4 py-3 flex items-center gap-3 whitespace-nowrap transition-colors {{ request()->routeIs('conducteurs.*') ? 'text-error bg-error-container/10 border-r-4 border-error font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg mx-2' }}">
                     <span class="material-symbols-outlined shrink-0">view_list</span>
                     <span class="min-w-0 flex-1 text-left truncate">Conducteurs</span>
                     <span class="material-symbols-outlined shrink-0 text-xs transition-transform duration-200"
                           :class="openConducteurs ? 'rotate-90' : ''">chevron_right</span>
                 </button>
-                <div x-show="openConducteurs"
+                <div id="tv-sidebar-conducteurs" x-show="openConducteurs" x-cloak
                      x-transition:enter="transition ease-out duration-150"
                      x-transition:enter-start="opacity-0 max-h-0"
                      x-transition:enter-end="opacity-100 max-h-[28rem]"
@@ -130,6 +136,7 @@
         <div x-data="{ openVeille: {{ request()->routeIs('veille.*') || request()->routeIs('sources.veille.*') ? 'true' : 'false' }} }" class="group">
             <button type="button"
                 @click="openVeille = !openVeille"
+                :aria-expanded="String(openVeille)" aria-controls="tv-sidebar-veille"
                 class="w-full px-4 py-3 flex items-center gap-3 whitespace-nowrap transition-colors {{ request()->routeIs('veille.*') || request()->routeIs('sources.veille.*') ? 'text-error bg-error-container/10 border-r-4 border-error font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg mx-2' }}">
                 <span class="material-symbols-outlined shrink-0">travel_explore</span>
                 <span class="min-w-0 flex-1 text-left truncate">Veille & Sources</span>
@@ -137,7 +144,7 @@
                       :class="openVeille ? 'rotate-90' : ''">chevron_right</span>
             </button>
 
-            <div x-show="openVeille"
+            <div id="tv-sidebar-veille" x-show="openVeille" x-cloak
                  x-transition:enter="transition ease-out duration-150"
                  x-transition:enter-start="opacity-0 max-h-0"
                  x-transition:enter-end="opacity-100 max-h-96"
@@ -182,6 +189,7 @@
         <div x-data="{ openIntervenants: {{ request()->routeIs('intervenants.*') || request()->routeIs('parcours-intervenants.*') || request()->routeIs('suivi-intervenants.*') ? 'true' : 'false' }} }" class="group">
             <button type="button"
                 @click="openIntervenants = !openIntervenants"
+                :aria-expanded="String(openIntervenants)" aria-controls="tv-sidebar-intervenants"
                 class="w-full px-4 py-3 flex items-center gap-3 whitespace-nowrap transition-colors {{ request()->routeIs('intervenants.*') || request()->routeIs('parcours-intervenants.*') ? 'text-error bg-error-container/10 border-r-4 border-error font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-container-highest rounded-lg mx-2' }}">
                 <span class="material-symbols-outlined shrink-0">group_add</span>
                 <span class="min-w-0 flex-1 text-left truncate">Intervenants</span>
@@ -189,7 +197,7 @@
                       :class="openIntervenants ? 'rotate-90' : ''">chevron_right</span>
             </button>
 
-            <div x-show="openIntervenants"
+            <div id="tv-sidebar-intervenants" x-show="openIntervenants" x-cloak
                  x-transition:enter="transition ease-out duration-150"
                  x-transition:enter-start="opacity-0 max-h-0"
                  x-transition:enter-end="opacity-100 max-h-96"

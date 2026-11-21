@@ -24,6 +24,7 @@ export default function conducteurRedaction() {
         modaleErreur: '',
         _modalInitialForm: null,
         _modalRequestId: 0,
+        _modalReturnFocus: null,
         modaleSuppressionVisible: false,
         modeEdition: false,
         sequenceEnCoursId: null,
@@ -128,6 +129,7 @@ export default function conducteurRedaction() {
             this.inviteSelection = '';
             this.modaleErreur = '';
             this.modaleChargement = !!seqId;
+            this._modalReturnFocus = document.activeElement;
             const requestId = ++this._modalRequestId;
 
             this.formSeq = {
@@ -171,11 +173,42 @@ export default function conducteurRedaction() {
                         this._modalInitialForm = JSON.stringify(this.formSeq);
                     })
                     .catch(error => { if (requestId === this._modalRequestId) this.modaleErreur = error.message || 'Chargement impossible.'; })
-                    .finally(() => { if (requestId === this._modalRequestId) this.modaleChargement = false; });
+                    .finally(() => {
+                        if (requestId !== this._modalRequestId) return;
+                        this.modaleChargement = false;
+                        this.$nextTick(() => {
+                            (this.modaleErreur
+                                ? this.$refs.sequenceDialog
+                                : this.$refs.sequenceDialog?.querySelector('input[name="title"]'))?.focus();
+                        });
+                    });
             }
 
             if (!seqId) this._modalInitialForm = JSON.stringify(this.formSeq);
             this.modaleSequenceVisible = true;
+            this.$nextTick(() => {
+                const control = !seqId ? this.$refs.sequenceDialog?.querySelector('input[name="title"]') : null;
+                (control || this.$refs.sequenceDialog)?.focus();
+            });
+        },
+
+        bloquerTabModale(event) {
+            const dialog = this.$refs.sequenceDialog;
+            if (!dialog || !this.modaleSequenceVisible) return;
+            const items = Array.from(dialog.querySelectorAll(
+                'button:not([disabled]), a[href], input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => el.getClientRects().length > 0);
+            if (!items.length) {
+                event.preventDefault();
+                dialog.focus();
+                return;
+            }
+            const first = items[0], last = items[items.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+                event.preventDefault(); first.focus();
+            }
         },
 
         fermerToutesModales(force = false) {
@@ -190,6 +223,11 @@ export default function conducteurRedaction() {
             this.modaleChargement = false;
             this._modalInitialForm = null;
             this.sequenceEnCoursId = null;
+            const previous = this._modalReturnFocus;
+            this._modalReturnFocus = null;
+            this.$nextTick(() => {
+                if (previous?.isConnected) previous.focus({ preventScroll: true });
+            });
         },
 
                 // ============ INVITÉS (1 ou plusieurs par sujet) ============

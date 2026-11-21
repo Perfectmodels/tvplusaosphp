@@ -24,21 +24,20 @@
 
     <div class="p-4 md:p-6 max-w-[1400px] mx-auto">
         @if($conducteurs->count() === 0)
-            <div class="p-16 text-center bg-white border border-outline/10 rounded-xl shadow-sm">
-                <div class="w-16 h-16 mx-auto mb-5 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl">
-                    <i class="fa-solid fa-tv"></i>
-                </div>
-                <p class="text-lg italic text-secondary mb-3">Aucun conducteur d'émission pour cette date.</p>
-                <p class="text-sm text-on-surface-variant max-w-md mx-auto">
-                    Choisissez une autre date pour retrouver vos conducteurs.
-                    @can('create', \App\Models\Conducteur::class)
-                        Utilisez « Nouveau conducteur d'émission » pour préparer cette édition.
-                    @endcan
-                </p>
-            </div>
+            <x-ui.empty-state icon="fa-tv"
+                title="Aucun conducteur d'émission pour cette date"
+                description="Choisissez une autre date pour consulter les éditions disponibles.">
+                @can('create', \App\Models\Conducteur::class)
+                    <x-slot:actions>
+                        <a href="{{ $createEmissionUrl }}" class="ui-action ui-action--primary">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> Créer un conducteur d'émission
+                        </a>
+                    </x-slot:actions>
+                @endcan
+            </x-ui.empty-state>
         @else
-            <div class="overflow-hidden rounded-xl border border-outline/10 bg-white shadow-sm">
-                <div class="overflow-x-auto">
+            <div class="rounded-xl bg-white shadow-sm">
+                <x-ui.table-shell label="Liste des conducteurs d'émission">
                     <table class="w-full min-w-[900px] border-collapse text-left text-sm">
                         <thead>
                             <tr class="border-b border-outline/10 bg-surface-container-low text-xs uppercase tracking-wider text-on-surface-variant">
@@ -72,9 +71,9 @@
                                     data-url-delete="{{ route('conducteurs.emission.destroy', $c) }}">
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <span class="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs font-bold tracking-wider text-primary">
+                                            <x-ui.status-badge variant="info">
                                                 <i class="fa-solid fa-fingerprint" aria-hidden="true"></i>{{ $codeC }}
-                                            </span>
+                                            </x-ui.status-badge>
                                             {!! $c->type_badge_html !!}
                                         </div>
                                         <div class="mt-1.5 font-bold text-on-surface">{{ $titreConducteur }}</div>
@@ -116,7 +115,7 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                </x-ui.table-shell>
             </div>
             <div class="mt-8">
                 @include('_partials.conducteur-edition-pagination')

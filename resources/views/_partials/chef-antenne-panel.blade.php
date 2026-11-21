@@ -102,7 +102,7 @@
                       class="w-full rounded-lg border border-outline/30 bg-white px-3 py-2.5 text-sm leading-relaxed text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></textarea>
 
             <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-3 text-xs">
+                <div class="flex flex-wrap items-center gap-3 text-xs" role="status" aria-live="polite">
                     <span class="text-on-surface-variant" x-show="notesDirty" x-cloak>Modifications non enregistrées…</span>
                     <span class="font-semibold text-green-700" x-show="saved" x-cloak>Notes enregistrées.</span>
                     <span class="font-semibold text-error" x-show="saveError" x-cloak x-text="saveError"></span>
@@ -134,7 +134,8 @@
          @pointerup.window="endDrag()"
          @pointercancel.window="endDrag()"
          class="fixed bottom-24 right-5 z-[60] w-[min(460px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-white/10 bg-[#0b1220] text-slate-100 shadow-2xl"
-         role="dialog" aria-label="Prompteur du présentateur">
+         role="dialog" aria-modal="false" aria-label="Prompteur du présentateur"
+         tabindex="-1" @keydown.escape.stop="fermerPrompter()">
         <div @pointerdown="startDrag($event)"
              class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-[#111a2e] px-4 py-2.5 cursor-move select-none touch-none"
              title="Glissez pour déplacer le prompteur">
@@ -146,7 +147,7 @@
                 <label for="prompter-sequence" class="sr-only">Séquence du prompteur</label>
                 <select id="prompter-sequence"
                         @change="selectSequence(sequences.find((s) => Number(s.id) === Number($event.target.value)))"
-                        class="max-w-[170px] rounded-md border border-white/15 bg-[#16223c] px-2 py-1 text-[11px] text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400">
+                        class="min-h-11 max-w-[210px] rounded-md border border-white/15 bg-[#16223c] px-2 py-1 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-400">
                     <template x-for="s in sequences" :key="`prompter-${s.id}`">
                         <option :value="s.id" :selected="Number(s.id) === Number(activeId)" x-text="sequenceLabel(s)"></option>
                     </template>
@@ -157,12 +158,12 @@
                        class="h-1.5 w-24 cursor-pointer accent-sky-400">
                 <span class="w-12 font-mono text-[11px] text-slate-300" x-text="prompterSpeed + ' px/s'">30 px/s</span>
                 <button type="button" @click="prompterPaused = !prompterPaused"
-                        class="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-white/15 px-2 text-xs font-semibold text-slate-100 hover:bg-white/10">
+                        class="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-white/15 px-3 text-xs font-semibold text-slate-100 hover:bg-white/10">
                     <i :class="prompterPaused ? 'fa-solid fa-play' : 'fa-solid fa-pause'" aria-hidden="true"></i>
                     <span x-text="prompterPaused ? 'Reprendre' : 'Pause'">Pause</span>
                 </button>
                 <button type="button" @click="fermerPrompter()" aria-label="Fermer le prompteur"
-                        class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/15 text-slate-200 hover:bg-white/10">
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/15 text-slate-200 hover:bg-white/10">
                     <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>

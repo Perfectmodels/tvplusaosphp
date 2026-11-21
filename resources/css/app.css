@@ -76,7 +76,7 @@ form [aria-invalid='true'] {
         @apply text-error ml-0.5;
     }
     .form-input {
-        @apply w-full px-3.5 py-2.5 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary text-on-surface;
+        @apply w-full min-h-11 px-3.5 py-2.5 text-sm bg-surface-container-lowest border border-outline-variant rounded-lg outline-none transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary text-on-surface;
     }
     textarea.form-input {
         @apply resize-y min-h-[100px];
@@ -88,22 +88,22 @@ form [aria-invalid='true'] {
         @apply h-2 w-full;
     }
     .input-field {
-        @apply w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder-slate-400;
+        @apply w-full min-h-11 px-4 py-2.5 rounded-lg border border-outline-variant bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder-slate-400;
     }
     .btn-primary {
-        @apply px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2;
+        @apply min-h-11 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2;
     }
     .btn-primary:hover { background-color:#0d3264; transition:all .15s ease; }
     .btn-outline {
-        @apply px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium inline-flex items-center justify-center gap-2;
+        @apply min-h-11 px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-medium inline-flex items-center justify-center gap-2;
     }
     .btn-outline:hover { background:#f8fafc; transition:all .15s ease; }
     .btn-ghost {
-        @apply px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium inline-flex items-center justify-center gap-2;
+        @apply min-h-11 px-4 py-2 rounded-lg border border-outline-variant text-on-surface-variant text-sm font-medium inline-flex items-center justify-center gap-2;
     }
     .btn-ghost:hover { background:#f8fafc; transition:all .15s ease; }
     .btn-success {
-        @apply px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2;
+        @apply min-h-11 px-4 py-2 rounded-lg bg-success text-white text-sm font-semibold shadow-sm inline-flex items-center justify-center gap-2;
     }
     .btn-success:hover { background-color:#047857; transition:all .15s ease; }
     .badge-blue { background:#e0eaff; color:#001a41; }
@@ -441,5 +441,54 @@ form [aria-invalid='true'] {
         background: rgba(239, 246, 255, .85);
         border: 1px solid rgba(191, 219, 254, .9);
         color: #1e40af;
+    }
+}
+
+
+/* TV+A OS component primitives: one visual language across legacy Blade and modules. */
+@layer components {
+    .ui-action {
+        @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary disabled:cursor-not-allowed disabled:opacity-50;
+    }
+    .ui-action--primary { @apply bg-primary text-on-primary hover:bg-[#0d3264]; }
+    .ui-action--secondary { @apply bg-secondary text-on-secondary hover:bg-[#0043a3]; }
+    .ui-action--outline { @apply border border-outline-variant bg-white text-on-surface hover:bg-surface-container-low; }
+    .ui-action--danger { @apply bg-error text-on-error hover:bg-on-error-container; }
+    .ui-field {
+        @apply min-h-11 w-full rounded-lg border border-outline-variant bg-white px-3.5 py-2.5 text-base text-on-surface shadow-sm placeholder:text-on-surface-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 disabled:cursor-not-allowed disabled:bg-surface-container;
+    }
+    .ui-panel { @apply rounded-2xl border border-outline-variant bg-white shadow-sm; }
+    .ui-table-frame { @apply w-full overflow-x-auto rounded-xl border border-outline-variant bg-white; }
+    .ui-table-frame table { @apply w-full border-collapse text-sm; }
+    .ui-table-frame th { @apply bg-surface-container-low px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant; }
+    .ui-table-frame td { @apply border-t border-outline-variant/50 px-4 py-3 align-top text-on-surface; }
+    .ui-feedback { @apply rounded-lg border px-3.5 py-3 text-sm; }
+    .ui-feedback--error { @apply border-error/30 bg-error-container/40 text-on-error-container; }
+    .ui-feedback--success { @apply border-success/30 bg-green-50 text-success; }
+    .ui-feedback--info { @apply border-secondary/30 bg-secondary/5 text-primary; }
+    .ui-empty-state { @apply flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-outline-variant bg-surface-container-low/40 px-5 py-10 text-center; }
+    .ui-skip-link {
+        @apply fixed left-3 top-3 z-[100] -translate-y-24 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-on-primary shadow-xl transition-transform;
+    }
+    .ui-skip-link:focus { @apply translate-y-0; }
+}
+
+:where(a[href], button, input, select, textarea, summary, [role="button"], [role="menuitem"]):focus-visible {
+    outline: 2px solid #0054cd;
+    outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+    html.ui-sidebar-open { overflow: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-shell *,
+    .app-shell *::before,
+    .app-shell *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
     }
 }
