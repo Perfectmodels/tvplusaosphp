@@ -57,6 +57,7 @@ class EmissionController extends Controller
         $jourActuel = array_keys($joursOptions)[now()->dayOfWeekIso - 1];
         $stats = [
             'total' => Emission::count(),
+            'actives' => Emission::where('is_active', true)->count(),
             'aujourdhui' => Emission::where('is_active', true)
                 ->whereNotIn('statut', [StatutEmissionEnum::Archivee->value, StatutEmissionEnum::Annulee->value])
                 ->whereJsonContains('jours_diffusion', $jourActuel)->count(),
