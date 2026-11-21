@@ -26,6 +26,7 @@
             'debut_hm' => $s->debut_hm,
             'fin_hm' => $s->fin_hm,
             'duree_hm' => $s->duree_hm,
+            'duration_seconds' => (int) ($s->duration_seconds ?? 0),
             'intervenant_nom' => $s->intervenant_nom_affichage ?: '—',
             'fonction' => $s->intervenant_fonction_affichage ?: ($s->fonction_text ?: '—'),
             'alerte_info' => (bool) $s->alerte_info,
@@ -70,55 +71,78 @@
         }
     </style>
 
-    {{-- =========== STATS BAR (harmonisée — infos regroupées) =========== --}}
-    <section class="bg-white border border-outline-variant rounded-xl p-5 flex flex-wrap gap-6 items-center shadow-sm">
-        <div class="min-w-[140px]">
-            <p class="text-xs uppercase tracking-widest text-secondary mb-1">Émission</p>
-            <h1 class="font-black text-lg">{{ $nomEmission }}</h1>
-            <p class="text-xs text-secondary mt-0.5">{{ \Carbon\Carbon::parse($dateEdition)->isoFormat('dddd D MMMM YYYY') }}</p>
+    {{-- Supervision du conducteur : les indicateurs restent reliés aux séquences du serveur. --}}
+    @php($dureeCibleSecondes = max(1, (int) ($conducteur->target_duration_sec ?? 0)))
+    <section class="rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5" aria-labelledby="conducteur-hero-title">
+        <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+                <p class="mb-1 text-xs font-bold uppercase tracking-wider text-primary">Édition · {{ \Carbon\Carbon::parse($dateEdition)->format('d/m/Y') }}</p>
+                <h1 id="conducteur-hero-title" class="text-xl font-black leading-tight text-on-surface sm:text-2xl">{{ $nomEmission }}</h1>
+                <p class="mt-1 text-xs text-on-surface-variant">
+                    Horaire : <span class="font-semibold">{{ $heureDebutEmission }} → {{ $heureFinCible }}</span>
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-1 rounded-lg border border-outline-variant px-2.5 py-1.5 text-xs font-semibold">{!! $statutBadge !!}</span>
+                <span class="inline-flex items-center gap-1 rounded-lg border border-outline-variant px-2.5 py-1.5 text-xs">{!! $conducteur->type_badge_html !!}</span>
+            </div>
         </div>
-        <div class="hidden md:block w-px h-10 bg-outline-variant"></div>
-        <div class="min-w-[110px]">
-            <p class="text-xs uppercase tracking-widest text-secondary mb-1">Horaires</p>
-            <p class="font-bold text-lg font-mono">{{ $heureDebutEmission }} <span class="text-secondary font-normal">→</span> {{ $heureFinCible }}</p>
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Indicateurs de l'émission">
+            <div class="rounded-xl border border-outline/15 bg-surface-container-low/60 p-3.5">
+                <p class="flex items-center gap-2 text-xs font-semibold text-secondary"><i class="fa-solid fa-list-ol text-primary" aria-hidden="true"></i> Séquences</p>
+                <strong class="mt-2 block text-2xl font-black tabular-nums" x-text="sequences.length">{{ $sequences->count() }}</strong>
+                <p class="mt-1 text-xs text-on-surface-variant">Au conducteur</p>
+            </div>
+            <div class="rounded-xl border border-outline/15 bg-surface-container-low/60 p-3.5">
+                <p class="flex items-center gap-2 text-xs font-semibold text-secondary"><i class="fa-regular fa-clock text-primary" aria-hidden="true"></i> Durée prévue</p>
+                <strong class="mt-2 block text-2xl font-black font-mono tabular-nums">{{ $dureeTotaleCible }}</strong>
+                <p class="mt-1 text-xs text-on-surface-variant">Objectif de l'émission</p>
+            </div>
+            <div class="rounded-xl border border-outline/15 bg-surface-container-low/60 p-3.5">
+                <p class="flex items-center gap-2 text-xs font-semibold text-secondary"><i class="fa-solid fa-stopwatch text-primary" aria-hidden="true"></i> Durée actuelle</p>
+                <strong class="mt-2 block text-2xl font-black font-mono tabular-nums text-blue-700" x-text="dureeActuelle">{{ $dureeActuelle }}</strong>
+                <p class="mt-1 text-xs text-on-surface-variant">Somme des séquences</p>
+            </div>
+            <div class="rounded-xl border border-outline/15 bg-surface-container-low/60 p-3.5">
+                <p class="flex items-center gap-2 text-xs font-semibold text-secondary"><i class="fa-solid fa-triangle-exclamation text-primary" aria-hidden="true"></i> Dépassement</p>
+                <strong class="mt-2 block text-2xl font-black tabular-nums"
+                    :class="sequences.reduce((sum, seq) => sum + Number(seq.duration_seconds || 0), 0) > {{ $dureeCibleSecondes }} ? 'text-red-700' : 'text-on-surface'"
+                    x-text="Math.max(0, Math.ceil((sequences.reduce((sum, seq) => sum + Number(seq.duration_seconds || 0), 0) - {{ $dureeCibleSecondes }}) / 60)) + ' min'">—</strong>
+                <p class="mt-1 text-xs text-on-surface-variant">Par rapport à la durée cible</p>
+            </div>
         </div>
-        <div class="hidden md:block w-px h-10 bg-outline-variant"></div>
-        <div class="min-w-[130px]">
-            <p class="text-xs uppercase tracking-widest text-secondary mb-1">Durée prévue</p>
-            <p class="font-bold text-lg font-mono">{{ $dureeTotaleCible }}</p>
-        </div>
-        <div class="hidden md:block w-px h-10 bg-outline-variant"></div>
-        <div class="min-w-[130px]">
-            <p class="text-xs uppercase tracking-widest text-secondary mb-1">Durée actuelle</p>
-            <p class="font-bold text-lg font-mono text-blue-700" x-text="dureeActuelle">{{ $dureeActuelle }}</p>
-        </div>
-        <div class="hidden md:block w-px h-10 bg-outline-variant"></div>
-        <div class="min-w-[100px]">
-            <p class="text-xs uppercase tracking-widest text-secondary mb-1">Statut</p>
-            <div>{!! $statutBadge !!}</div>
-        </div>
-        <div class="hidden md:block w-px h-10 bg-outline-variant"></div>
-        <div class="min-w-[100px]">
-            <p class="text-xs uppercase tracking-widest text-secondary mb-1">Type</p>
-            <div>{!! $conducteur->type_badge_html !!}</div>
+        <div class="mt-4">
+            <div class="mb-1.5 flex items-center justify-between gap-2 text-xs text-on-surface-variant">
+                <span>Occupation de la durée programmée</span>
+                <span class="font-semibold tabular-nums"
+                    x-text="Math.round(sequences.reduce((sum, seq) => sum + Number(seq.duration_seconds || 0), 0) / {{ $dureeCibleSecondes }} * 100) + '%'">—</span>
+            </div>
+            <div class="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high" role="progressbar"
+                :aria-valuenow="Math.min(100, Math.round(sequences.reduce((sum, seq) => sum + Number(seq.duration_seconds || 0), 0) / {{ $dureeCibleSecondes }} * 100))"
+                aria-valuemin="0" aria-valuemax="100" aria-label="Occupation de la durée cible">
+                <div class="h-full rounded-full bg-primary transition-all duration-300"
+                    :style="'width:' + Math.min(100, Math.round(sequences.reduce((sum, seq) => sum + Number(seq.duration_seconds || 0), 0) / {{ $dureeCibleSecondes }} * 100)) + '%'"></div>
+            </div>
         </div>
         @can('updateEnTete', $conducteur)
-            <div class="hidden md:block w-px h-10 bg-outline-variant"></div>
-            <div class="min-w-[220px] flex-1" x-data='{ presentateurId: @json((string) $conducteur->presentateur_id) }'>
-                <form method="POST" action="{{ route('conducteurs.presentateur.update', $conducteur) }}" class="flex flex-wrap items-end gap-2">
+            <div class="mt-5 border-t border-outline/15 pt-4" x-data='{ presentateurId: @json((string) $conducteur->presentateur_id) }'>
+                <form method="POST" action="{{ route('conducteurs.presentateur.update', $conducteur) }}"
+                    class="flex flex-wrap items-end gap-2">
                     @csrf
-                    <label class="w-full text-xs uppercase tracking-widest text-secondary" for="presentateur-select">Présentateur</label>
-                    <select id="presentateur-select" name="presentateur_id" x-model="presentateurId" autocomplete="off"
-                            class="min-w-[180px] flex-1 rounded-lg border border-outline/30 bg-white px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/30">
-                        <option value="">— Non assigné —</option>
-                        @foreach($intervenants as $p)
-                            <option value="{{ $p->id }}" @selected((string) $conducteur->presentateur_id === (string) $p->id)>{{ trim(($p->civilite?->value ?? '').' '.$p->prenom.' '.$p->nom) }}</option>
-                        @endforeach
-                        @foreach($journalistes as $j)
-                            <option value="j:{{ $j->id }}" @selected((string) $conducteur->presentateur_id === 'j:'.$j->id)>{{ trim(($j->civilite?->value ?? '').' '.$j->prenom.' '.$j->nom) }} (journaliste)</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white hover:opacity-90">Changer</button>
+                    <div class="min-w-[220px] flex-1">
+                        <label for="presentateur-select" class="mb-1 block text-xs font-bold uppercase tracking-wider text-secondary">Présentateur de l'émission</label>
+                        <select id="presentateur-select" name="presentateur_id" x-model="presentateurId" autocomplete="off"
+                                class="w-full rounded-lg border border-outline/30 bg-white px-3 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-primary/30">
+                            <option value="">— Non assigné —</option>
+                            @foreach($intervenants as $p)
+                                <option value="{{ $p->id }}" @selected((string) $conducteur->presentateur_id === (string) $p->id)>{{ trim(($p->civilite?->value ?? '').' '.$p->prenom.' '.$p->nom) }}</option>
+                            @endforeach
+                            @foreach($journalistes as $j)
+                                <option value="j:{{ $j->id }}" @selected((string) $conducteur->presentateur_id === 'j:'.$j->id)>{{ trim(($j->civilite?->value ?? '').' '.$j->prenom.' '.$j->nom) }} (journaliste)</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:opacity-90">Enregistrer le présentateur</button>
                 </form>
             </div>
         @endcan
