@@ -326,7 +326,8 @@ final class ConducteurRedactionVraiController extends Controller
         // RÈGLE : seul un journaliste PRÉSENT à la réunion de rédaction est assignable
         $this->assertJournalistePresent($conducteur, isset($valid['journaliste_responsable_id']) ? (int) $valid['journaliste_responsable_id'] : null);
 
-        $pos = (int) ($valid['position'] ?? max(1, $conducteur->sequences()->count() + 1));
+        $nombreSujets = $conducteur->sequences()->count();
+        $pos = max(1, min((int) ($valid['position'] ?? ($nombreSujets + 1)), $nombreSujets + 1));
         $type = TypeSequenceEnum::tryFrom($valid['type']) ?? TypeSequenceEnum::Sujet;
 
         // Bulk shift positions >= pos (+1) → insérer à position exacte
@@ -381,6 +382,9 @@ final class ConducteurRedactionVraiController extends Controller
     public function updateSujet(Request $request, Conducteur $conducteur, Sequence $sequence): JsonResponse
     {
         Gate::authorize('crudSequenceRedaction', $sequence);
+        Gate::authorize('view', $conducteur);
+        abort_unless((string) $conducteur->type === 'redaction', 404);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Conducteur verrouillé.');
 
         if ((int) $sequence->conducteur_id !== (int) $conducteur->id) {
             return response()->json(['ok' => false, 'message' => 'Sujet non rattaché à ce conducteur.'], 409);
@@ -407,7 +411,7 @@ final class ConducteurRedactionVraiController extends Controller
 
         $type = TypeSequenceEnum::tryFrom($valid['type']) ?? TypeSequenceEnum::Sujet;
         $anciennePos = (int) $sequence->position;
-        $nouvellePos = (int) ($valid['position'] ?? $anciennePos);
+        $nouvellePos = max(1, min((int) ($valid['position'] ?? $anciennePos), $conducteur->sequences()->count()));
         $duree = (int) ($valid['duration_seconds'] ?? (int) $sequence->duration_seconds ?? 120);
         $start = $this->fusionDateTime($conducteur->date_edition ?? now(), '18:00');
         $end = $start?->copy()->addSeconds($duree);
@@ -480,6 +484,9 @@ final class ConducteurRedactionVraiController extends Controller
     public function destroySujet(Request $request, Conducteur $conducteur, Sequence $sequence): JsonResponse
     {
         Gate::authorize('deleteSequenceRedaction', $sequence);
+        Gate::authorize('view', $conducteur);
+        abort_unless((string) $conducteur->type === 'redaction', 404);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Conducteur verrouillé.');
         if ((int) $sequence->conducteur_id !== (int) $conducteur->id) {
             return response()->json(['ok' => false, 'message' => 'Sujet non rattaché à ce conducteur.'], 409);
         }
