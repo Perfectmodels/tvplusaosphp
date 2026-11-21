@@ -86,7 +86,6 @@ final class ConducteurPdfExporter
         $height = self::A4_W;
         $y = $this->technicalPage($pdf, $c, $draft, true);
         $number = 0;
-        $longNotes = [];
 
         foreach ($sequences as $sequence) {
             $number++;
@@ -97,7 +96,6 @@ final class ConducteurPdfExporter
             $notePreview = array_slice($noteLines, 0, 3);
             if (count($noteLines) > 3) {
                 $notePreview[] = 'Suite en annexe…';
-                $longNotes[] = $sequence;
             }
             $rowHeight = max(50, 12 * max(
                 count($titleLines),
@@ -162,7 +160,7 @@ final class ConducteurPdfExporter
                         continue;
                     }
                     $y = $this->pagedParagraph($pdf, $value, $label, $y, $width - 90, 10.5, 14,
-                        static fn (): float => $this->technicalPage($pdf, $c, $draft, false, false),
+                        fn (): float => $this->technicalPage($pdf, $c, $draft, false, false),
                         $height - 65);
                     $y += 9;
                 }
