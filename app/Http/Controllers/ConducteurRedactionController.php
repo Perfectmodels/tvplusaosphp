@@ -52,7 +52,9 @@ final class ConducteurRedactionController extends Controller
         $journalistes = Journaliste::query()->orderBy('nom')->get(['id', 'civilite', 'prenom', 'nom', 'fonction']);
         $typeOptions = TypeSequenceEnum::selectOptions();
         $sondage = $conducteur->emission_id
-            ? Sondage::query()->where('emission_id', $conducteur->emission_id)->latest()->first()
+            ? Sondage::query()->where('emission_id', $conducteur->emission_id)
+                ->whereHas('sequence', fn ($q) => $q->where('conducteur_id', $conducteur->id))
+                ->latest()->first()
             : null;
 
         $interactionMessages = collect();
