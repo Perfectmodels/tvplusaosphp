@@ -55,14 +55,15 @@ $statusSplash = [
 @section('content')
 <section class="mb-8" data-veille-live data-status-url="{{ route('veille.automation') }}" data-revision="{{ $automation['revision'] }}">
     @include('_partials.veille-automation')
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div class="mb-6 flex flex-col gap-4">
         <div>
-            <h2 class="text-[32px] font-bold tracking-[-0.02em] leading-10 text-on-background">Articles de veille</h2>
+            <h2 class="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">Articles de veille</h2>
             <p class="text-[16px] leading-6 text-on-surface-variant mt-1 font-normal">Collecte et classement automatiques des sources configurées.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="w-full">
             {{-- Recherche + filtres éditoriaux --}}
-            <form method="GET" action="{{ route('veille.sujets.index') }}" class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="{{ route('veille.sujets.index') }}"
+                  class="grid grid-cols-1 gap-3 rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,1fr))_auto]" aria-label="Filtrer les articles de veille">
                 <select name="country" aria-label="Périmètre de la veille" class="min-h-[44px] rounded-lg border border-outline-variant px-3 text-sm" onchange="this.form.submit()">
                     <option value="">Toutes les actualités</option>
                     <option value="GA" @selected(request('country') === 'GA')>Actualité gabonaise</option>
@@ -79,10 +80,10 @@ $statusSplash = [
                     <input type="hidden" name="{{ $filtre }}" value="{{ $valeur }}">
                 @endforeach
 
-                <div class="relative min-w-[220px] flex-1">
+                <div class="relative min-w-0 sm:col-span-2 xl:col-span-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm"></i>
-                    <input type="search" name="q" value="{{ $rechercheVeille }}" placeholder="Rechercher un sujet, mot-clé ou résumé…"
-                           class="w-full min-h-[44px] rounded-lg border border-outline-variant bg-surface-container-lowest py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15">
+                    <input type="search" name="q" value="{{ $rechercheVeille }}" aria-label="Rechercher dans les articles de veille"
+                           placeholder="Titre, mot-clé, résumé…" class="ui-field w-full pl-9">
                 </div>
 
                 <select name="category" data-veille-refresh-options="categories" onchange="this.form.submit()"
@@ -102,10 +103,10 @@ $statusSplash = [
                     @endforeach
                 </select>
 
-                <button type="submit" class="btn-primary min-h-[44px]">Filtrer</button>
+                <button type="submit" class="ui-action ui-action--primary">Filtrer</button>
 
                 @if($currentCat !== '' || $rechercheVeille !== '' || $sourceSelectionnee !== '')
-                    <a href="{{ route('veille.sujets.index') }}" class="btn-outline min-h-[44px]">Réinitialiser</a>
+                    <a href="{{ route('veille.sujets.index') }}" class="ui-action ui-action--outline">Réinitialiser</a>
                 @endif
             </form>
         </div>
@@ -149,7 +150,7 @@ $statusSplash = [
     </div>
 
     @if($subjects->count() === 0)
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-[0_10px_30px_-10px_rgba(0,26,65,0.04)] p-16 text-center">
+    <div class="rounded-2xl border border-outline-variant bg-white px-5 py-10 text-center shadow-sm sm:p-12">
         <i class="fa-solid fa-list-tree text-[#001a41] text-6xl mb-6 opacity-70"></i>
         <h3 class="text-[24px] font-bold leading-8 text-on-background mb-3">{{ $rechercheVeille !== '' || $currentCat !== '' || $sourceSelectionnee !== '' || request()->filled('status') ? 'Aucun résultat pour ces filtres' : 'Aucun sujet importé' }}</h3>
         <p class="text-[16px] text-on-surface-variant mb-8 max-w-xl mx-auto">
@@ -157,17 +158,17 @@ $statusSplash = [
         </p>
         <div class="flex items-center justify-center gap-4 flex-wrap">
             @can('create', \App\Models\VeilleSubject::class)
-                <button type="button" data-modal-open="scrapeModal" class="inline-flex items-center gap-2 bg-primary-container text-on-primary-container px-6 py-3 rounded-lg font-semibold text-sm tracking-[0.05em] hover:opacity-90 active:scale-95 transition">
+                <button type="button" data-modal-open="scrapeModal" class="ui-action ui-action--primary">
                     <i class="fa-solid fa-cloud-arrow-down"></i> Importer un article
                 </button>
             @endcan
-            <a href="{{ route('veille.sources') }}" class="inline-flex items-center gap-2 border border-outline-variant text-on-surface-variant px-6 py-3 rounded-lg font-semibold text-sm tracking-[0.05em] hover:text-primary hover:border-primary transition">
+            <a href="{{ route('veille.sources') }}" class="ui-action ui-action--outline">
                 <i class="fa-solid fa-rss"></i> Voir les sources
             </a>
         </div>
     </div>
     @else
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         @foreach($subjects as $subject)
         @php
             $splash = $statusSplash[$subject->status] ?? $statusSplash['pending'];
