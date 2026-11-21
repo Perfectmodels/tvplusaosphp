@@ -9,28 +9,34 @@ use App\Enums\StatutSondageEnum;
 use App\Enums\TypeEmissionEnum;
 use App\Enums\TypeSequenceEnum;
 use App\Http\Requests\StoreSondageRequest;
+use App\Models\Conducteur;
 use App\Models\Emission;
 use App\Models\Intervenant;
 use App\Models\Sequence;
 use App\Models\Sondage;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Illuminate\Validation\ValidationException;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 final class SondageAdminController extends Controller
 {
-    public function create(Emission $emission): View
+    public function create(Request $request, Emission $emission): View
     {
         $this->authorize('create', [Sondage::class, $emission]);
         abort_unless($emission->type === TypeEmissionEnum::Debat, 404);
 
-        $sequence = $this->sequenceDebat($emission);
+        $conducteurs = $this->conducteursDebat($emission);
+        $selectedConducteurId = $request->integer('conducteur_id')
+            ?: ($conducteurs->count() === 1 ? (int) $conducteurs->first()->id : null);
+        $sequence = $selectedConducteurId ? $this->sequenceDebat($emission, $selectedConducteurId) : null;
         $candidats = $sequence ? $this->debatteurs($sequence) : collect();
 
-        return view('sondage.create', compact('emission', 'candidats'));
+        return view('sondage.create', compact('emission', 'conducteurs', 'selectedConducteurId', 'candidats'));
     }
 
     public function store(StoreSondageRequest $request, Emission $emission): RedirectResponse
@@ -38,8 +44,21 @@ final class SondageAdminController extends Controller
         $this->authorize('create', [Sondage::class, $emission]);
         abort_unless($emission->type === TypeEmissionEnum::Debat, 404);
 
-        $sequence = $this->sequenceDebat($emission);
-        abort_unless($sequence !== null, 422, 'Aucune séquence DÉBAT n’est associée à cette émission.');
+        $conducteurs = $this->conducteursDebat($emission);
+        $conducteurId = $request->integer('conducteur_id')
+            ?: ($conducteurs->count() === 1 ? (int) $conducteurs->first()->id : null);
+        if ($conducteurId === null) {
+            throw ValidationException::withMessages([
+                'conducteur_id' => 'Sélectionnez une édition précise du débat.',
+            ]);
+        }
+        if (! $conducteurs->contains('id', $conducteurId)) {
+            throw ValidationException::withMessages([
+                'conducteur_id' => 'Le conducteur sélectionné ne correspond pas à cette émission.',
+            ]);
+        }
+        $sequence = $this->sequenceDebat($emission, $conducteurId);
+        abort_unless($sequence !== null, 422, 'Aucune séquence DÉBAT ne figure dans cette édition.');
 
         $candidats = $this->debatteurs($sequence);
         abort_if($candidats->isEmpty(), 422, 'Aucun débatteur n’est associé à la séquence DÉBAT.');
@@ -124,10 +143,24 @@ final class SondageAdminController extends Controller
         ]);
     }
 
-    private function sequenceDebat(Emission $emission): ?Sequence
+    /** @return Collection<int, Conducteur> */
+    private function conducteursDebat(Emission $emission): Collection
     {
-        return $emission->sequences()
+        return Conducteur::query()
+            ->where('emission_id', $emission->id)
+            ->where('type', 'emission')
+            ->orderByDesc('date_edition')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    private function sequenceDebat(Emission $emission, int $conducteurId): ?Sequence
+    {
+        return Sequence::query()
+            ->where('conducteur_id', $conducteurId)
+            ->where('emission_id', $emission->id)
             ->where('type', TypeSequenceEnum::Debat->value)
+            ->orderBy('position')
             ->first();
     }
 
