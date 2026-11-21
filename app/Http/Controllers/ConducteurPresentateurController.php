@@ -461,8 +461,8 @@ class ConducteurPresentateurController extends Controller
 
         $valid = $request->validate([
             'position' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:999'],
-            'heure_debut' => ['required', 'string', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
-            'heure_fin' => ['required', 'string', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+            'heure_debut' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
+            'heure_fin' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
             'type' => ['required', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'summary' => ['sometimes', 'nullable', 'string', 'max:5000'],
@@ -570,8 +570,8 @@ class ConducteurPresentateurController extends Controller
 
         $valid = $request->validate([
             'position' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:999'],
-            'heure_debut' => ['required', 'string', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
-            'heure_fin' => ['required', 'string', 'regex:/^\d{1,2}:\d{2}(:\d{2})?$/'],
+            'heure_debut' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
+            'heure_fin' => ['required', 'string', 'regex:/^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$/'],
             'type' => ['required', 'string'],
             'title' => ['required', 'string', 'max:255'],
             'summary' => ['sometimes', 'nullable', 'string', 'max:5000'],
