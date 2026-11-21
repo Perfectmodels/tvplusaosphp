@@ -636,6 +636,7 @@ class ParcoursIntervenantController extends Controller
                 //    été scanné à l'accueil (l'arrivée = le scan lui-même).
                 'bloque_scan' => ! $scanFait
                     && $enum->ordre() >= EtapeParcoursIntervenantEnum::ArriveSurSite->ordre(),
+                'can_valider' => auth()->user()?->can('advance', [$p, $enum]) ?? false,
             ];
         }
 
@@ -650,6 +651,9 @@ class ParcoursIntervenantController extends Controller
 
         return [
             'id' => (int) $p->id,
+            'can_retard' => auth()->user()?->can('markDelay', $p) ?? false,
+            'can_no_show' => auth()->user()?->can('markNoShow', $p) ?? false,
+            'can_scanner' => auth()->user()?->can('scan', Intervenant::class) ?? false,
             'rattache_conducteur' => (bool) $p->conducteur_id,
             'affecte_sequence' => (bool) $p->sequence_intervenant_id,
             'en_attente_affectation' => ! $p->sequence_intervenant_id,
