@@ -107,7 +107,7 @@ class RoleDashboardService
             $emissionQuery->whereIn('id', (clone $conducteurs)->select('emission_id'));
         }
         $showProduction = ! in_array($role, ['admin', 'superadmin', 'responsable_administratif', 'documentaliste', 'community_manager'], true);
-        $emissions = $showProduction || $role === 'community_manager' ? $emissionQuery->orderBy('nom')->get(['id', 'nom']) : collect();
+        $emissions = $showProduction || $role === 'community_manager' || $administrator ? $emissionQuery->orderBy('nom')->get(['id', 'nom']) : collect();
         if (filled($filters['emission_id'] ?? null)) {
             abort_unless($emissions->contains('id', (int) $filters['emission_id']), 403);
             $conducteurs->where('emission_id', $filters['emission_id']);

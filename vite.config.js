@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/css/dashboard.css', 'resources/css/workspace.css', 'resources/js/shared-workspace.js', 'resources/css/welcome-eye.css', 'resources/js/welcome-eye.js', 'resources/css/welcome-intro.css', 'resources/js/welcome-intro.js', 'resources/css/login-experience.css', 'resources/js/login-experience.js', 'resources/js/scanner-qr.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/css/dashboard.css', 'resources/css/dashboard-admin.css', 'resources/css/workspace.css', 'resources/js/shared-workspace.js', 'resources/css/welcome-eye.css', 'resources/js/welcome-eye.js', 'resources/css/welcome-intro.css', 'resources/js/welcome-intro.js', 'resources/css/login-experience.css', 'resources/js/login-experience.js', 'resources/js/scanner-qr.js'],
             refresh: true,
         }),
         {
