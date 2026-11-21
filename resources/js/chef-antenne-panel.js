@@ -133,7 +133,13 @@ export default function chefAntennePanel() {
 
         selectSequence(seq) {
             if (!seq) return;
-            if (this.notesDirty) this.saveNotes();
+            if (this.notesDirty) {
+                const previous = this.courante();
+                const draft = this.notes;
+                this.saveNotes();
+                // Preserve the draft locally even if the network save fails.
+                if (previous) previous.notes_presentateur = draft;
+            }
             this.activeId = Number(seq.id);
             this.notesDirty = false;
             this.syncNotes();
@@ -207,7 +213,12 @@ export default function chefAntennePanel() {
 
         async saveNotes() {
             const seq = this.courante();
-            if (!seq || !this.routes.saveNotes || this.saving) return;
+            if (!seq || !this.routes.saveNotes) return;
+            if (this.saving) {
+                this._saveAgain = true;
+                return;
+            }
+            const sentNotes = this.notes;
             if (this._saveTimer) window.clearTimeout(this._saveTimer);
             this.saving = true;
             this.saveError = '';
@@ -221,12 +232,14 @@ export default function chefAntennePanel() {
                         'X-Requested-With': 'XMLHttpRequest',
                         Accept: 'application/json',
                     },
-                    body: JSON.stringify({ notes_presentateur: this.notes }),
+                    body: JSON.stringify({ notes_presentateur: sentNotes }),
                 });
                 if (response.ok) {
-                    seq.notes_presentateur = this.notes;
-                    this.notesDirty = false;
-                    this.saved = true;
+                    seq.notes_presentateur = sentNotes;
+                    if (this.courante()?.id === seq.id && this.notes === sentNotes) {
+                        this.notesDirty = false;
+                        this.saved = true;
+                    }
                     window.setTimeout(() => { this.saved = false; }, 2500);
                 } else {
                     const json = await response.json().catch(() => null);
@@ -237,6 +250,12 @@ export default function chefAntennePanel() {
                 console.error('Chef antenne notes:', e);
             } finally {
                 this.saving = false;
+                if (this._saveAgain && this.notesDirty) {
+                    this._saveAgain = false;
+                    this.scheduleSave();
+                } else {
+                    this._saveAgain = false;
+                }
             }
         },
 
