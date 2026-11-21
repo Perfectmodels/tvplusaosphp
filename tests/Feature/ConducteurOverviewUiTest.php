@@ -10,6 +10,7 @@ use App\Models\Emission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -39,7 +40,12 @@ class ConducteurOverviewUiTest extends TestCase
             'type' => $type,
             'status' => $status,
             'emission_id' => $type === 'emission'
-                ? Emission::create(['nom' => 'Programme '.$title])->id : null,
+                ? Emission::create([
+                    'nom' => 'Programme '.$title,
+                    'title' => 'Programme '.$title,
+                    'slug' => Str::uuid()->toString(),
+                    'is_active' => true,
+                ])->id : null,
         ]);
     }
 
