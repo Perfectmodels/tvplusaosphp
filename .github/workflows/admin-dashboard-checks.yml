@@ -11,11 +11,28 @@ on:
       - "vite.config.js"
       - "tests/Feature/AdminDashboardAnalyticsTest.php"
       - ".github/workflows/admin-dashboard-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
+  runner:
+    name: Runner availability diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify runner can start
+        run: |
+          echo "Runner started on $(uname -s)"
+          echo "GitHub event: $GITHUB_EVENT_NAME"
+          echo "Workflow repository: $GITHUB_REPOSITORY"
+          node --version
+          php --version || true
+
   php:
     name: PHP lint and analytics feature tests
     runs-on: ubuntu-latest
+    needs: runner
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -23,21 +40,38 @@ jobs:
           php-version: "8.3"
           extensions: mbstring, sqlite3, pdo_sqlite, dom, xml, gd, zip, bcmath
           coverage: none
-      - run: composer install --prefer-dist --no-interaction --no-progress
-      - run: php -l app/Services/AdminDashboardAnalyticsService.php
-      - run: php -l app/Http/Controllers/DashboardController.php
-      - run: php -l tests/Feature/AdminDashboardAnalyticsTest.php
-      - run: cp .env.example .env && php artisan key:generate
-      - run: php artisan test --filter=AdminDashboardAnalyticsTest
+          tools: composer:v2
+      - name: Configure isolated test environment
+        run: cp .env.example .env
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts
+      - name: Prepare Laravel
+        run: |
+          php artisan package:discover --ansi
+          php artisan key:generate --force
+      - name: PHP syntax check
+        run: |
+          php -l app/Services/AdminDashboardAnalyticsService.php
+          php -l app/Http/Controllers/DashboardController.php
+          php -l tests/Feature/AdminDashboardAnalyticsTest.php
+      - name: Run analytics feature tests
+        run: php artisan test --filter=AdminDashboardAnalyticsTest
 
   assets:
     name: Vite production build
     runs-on: ubuntu-latest
+    needs: runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci
-      - run: npm run build
+      - name: Install JavaScript dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Compile production assets
+        run: npm run build
+      - name: Verify generated dashboard stylesheet
+        run: |
+          test -f public/build/manifest.json
+          grep -q 'resources/css/dashboard-admin.css' public/build/manifest.json
