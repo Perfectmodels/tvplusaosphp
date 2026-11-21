@@ -395,23 +395,80 @@ $remixStatusMap = [
 (function(){
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabPanels = document.querySelectorAll('.tab-panel');
-    tabBtns.forEach(b => b.addEventListener('click', () => {
-        const target = b.dataset.tabTarget;
+    function activateVeilleTab(button) {
+        const target = button.dataset.tabTarget;
         tabBtns.forEach(x => {
-            x.classList.remove('border-primary','text-primary');
-            x.classList.add('border-transparent','text-on-surface-variant');
+            const active = x === button;
+            x.classList.toggle('border-primary', active);
+            x.classList.toggle('text-primary', active);
+            x.classList.toggle('border-transparent', !active);
+            x.classList.toggle('text-on-surface-variant', !active);
+            x.setAttribute('aria-selected', String(active));
+            x.tabIndex = active ? 0 : -1;
         });
-        b.classList.add('border-primary','text-primary');
-        b.classList.remove('border-transparent','text-on-surface-variant');
-        tabPanels.forEach(p => p.classList.toggle('hidden', p.id !== target));
-    }));
+        tabPanels.forEach(panel => {
+            const hidden = panel.id !== target;
+            panel.classList.toggle('hidden', hidden);
+            panel.hidden = hidden;
+        });
+    }
+    tabBtns.forEach((button, index) => {
+        button.addEventListener('click', () => activateVeilleTab(button));
+        button.addEventListener('keydown', event => {
+            const keys = {
+                ArrowRight: (index + 1) % tabBtns.length,
+                ArrowLeft: (index - 1 + tabBtns.length) % tabBtns.length,
+                Home: 0,
+                End: tabBtns.length - 1,
+            };
+            if (!(event.key in keys)) return;
+            event.preventDefault();
+            const next = tabBtns[keys[event.key]];
+            activateVeilleTab(next);
+            next.focus();
+        });
+    });
 
     const modals = document.querySelectorAll('[data-modal-backdrop]');
-    modals.forEach(m => {
-        const opens = document.querySelectorAll(`[data-modal-open="${m.id}"]`);
-        const closes = m.querySelectorAll('[data-modal-close]');
-        opens.forEach(b => b.addEventListener('click', e => { e.preventDefault(); m.classList.remove('hidden'); document.body.style.overflow='hidden'; }));
-        closes.forEach(c => c.addEventListener('click', e => { e.preventDefault(); m.classList.add('hidden'); document.body.style.overflow=''; }));
+    modals.forEach(modal => {
+        const opens = document.querySelectorAll('[data-modal-open="' + modal.id + '"]');
+        const closes = modal.querySelectorAll('[data-modal-close]');
+        let returnFocus = null;
+        let previousOverflow = '';
+        function closeModal() {
+            if (modal.classList.contains('hidden')) return;
+            modal.classList.add('hidden');
+            document.body.style.overflow = previousOverflow;
+            if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+            returnFocus = null;
+        }
+        opens.forEach(button => button.addEventListener('click', event => {
+            event.preventDefault();
+            if (!modal.classList.contains('hidden')) return;
+            returnFocus = button;
+            previousOverflow = document.body.style.overflow;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            (modal.querySelector('input[name="title"]') || modal).focus({ preventScroll: true });
+        }));
+        closes.forEach(button => button.addEventListener('click', event => {
+            event.preventDefault();
+            closeModal();
+        }));
+        modal.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { event.preventDefault(); closeModal(); return; }
+            if (event.key !== 'Tab') return;
+            const focusables = Array.from(modal.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => el.getClientRects().length);
+            if (!focusables.length) { event.preventDefault(); modal.focus(); return; }
+            const first = focusables[0], last = focusables[focusables.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+                event.preventDefault(); first.focus();
+            }
+        });
     });
 })();
 </script>
