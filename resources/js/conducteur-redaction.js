@@ -37,6 +37,7 @@ export default function conducteurRedaction() {
         inviteDropdownOpen: false,
 
         formSeq: {
+            position: 1,
             title: '',
             type: 'SUJET',
             duration_minutes: 2,
@@ -130,6 +131,7 @@ export default function conducteurRedaction() {
             const requestId = ++this._modalRequestId;
 
             this.formSeq = {
+                position: this.sequences.length + 1,
                 title: '',
                 type: 'SUJET',
                 duration_minutes: 2,
@@ -153,6 +155,7 @@ export default function conducteurRedaction() {
                         if (requestId !== this._modalRequestId) return;
                         if (!json) throw new Error('Chargement impossible.');
                         this.formSeq = {
+                            position: Number(json.position) || 1,
                             title: json.title || '',
                             type: json.type_value || 'SUJET',
                             duration_minutes: json.duration_minutes_floor ?? 2,
@@ -254,19 +257,39 @@ export default function conducteurRedaction() {
         },
 
         async soumettreModaleSequence() {
-            if (!this.formSeq.title || this.envoiEnCours || this.modaleChargement) return;
+            if (this.envoiEnCours || this.modaleChargement) return;
             this.modaleErreur = '';
-            if (['DEBAT', 'DÉBAT'].includes(String(this.formSeq.type || '').toUpperCase()) && (this.formSeq.intervenant_ids.length < 2 || this.formSeq.intervenant_ids.length > 4)) {
+            const title = String(this.formSeq.title || '').trim();
+            const minutes = Number(this.formSeq.duration_minutes);
+            const seconds = Number(this.formSeq.duration_seconds);
+            if (!title || title.length > 255) {
+                this.modaleErreur = 'Le titre est obligatoire (255 caractères maximum).';
+                return;
+            }
+            if (!Number.isInteger(minutes) || minutes < 0 || minutes > 600
+                || !Number.isInteger(seconds) || seconds < 0 || seconds > 59
+                || minutes * 60 + seconds < 1) {
+                this.modaleErreur = 'Indiquez une durée positive (0 à 600 minutes et 0 à 59 secondes).';
+                return;
+            }
+            if (!this.modeEdition && (!Number.isInteger(+this.formSeq.position)
+                || +this.formSeq.position < 1 || +this.formSeq.position > this.sequences.length + 1)) {
+                this.modaleErreur = 'Position invalide pour ce conducteur.';
+                return;
+            }
+            if (['DEBAT', 'DÉBAT'].includes(String(this.formSeq.type || '').toUpperCase())
+                && (this.formSeq.intervenant_ids.length < 2 || this.formSeq.intervenant_ids.length > 4)) {
                 this.modaleErreur = 'Un débat exige entre 2 et 4 intervenants.';
                 return;
             }
+            this.formSeq.title = title;
             this.envoiEnCours = true;
 
             const formData = new FormData();
             Object.keys(this.formSeq).forEach(k => {
                 const v = this.formSeq[k];
                 // Invités gérés à part (JSON) + liste de détails hors formulaire
-                if (k === 'intervenant_ids' || k === 'intervenants') return;
+                if (k === 'intervenant_ids' || k === 'intervenants' || (k === 'position' && this.modeEdition)) return;
                 if (k === 'alerte_info') { formData.append(k, v ? '1' : '0'); return; }
                 if (v === null || v === undefined || v === '') return;
                 formData.append(k, typeof v === 'number' ? String(v) : v);
