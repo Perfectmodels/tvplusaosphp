@@ -27,6 +27,7 @@ class ParcoursIntervenantService
     public function placerDansConducteur(ParcoursIntervenant $parcours, ?User $by = null): bool
     {
         $place = false;
+        $corrigerAssociation = false;
 
         // 1. Une invitation est liée uniquement au conducteur de son émission
         // et de sa DATE de passage. Ne jamais choisir une ancienne édition.
@@ -45,7 +46,7 @@ class ParcoursIntervenantService
                     $parcours->conducteur_id = null;
                     $parcours->sequence_id = null;
                     $parcours->sequence_intervenant_id = null;
-                    $place = true;
+                    $corrigerAssociation = true;
                 }
 
                 if (! $parcours->conducteur_id) {
@@ -88,7 +89,7 @@ class ParcoursIntervenantService
             $place = true;
         }
 
-        if ($place) {
+        if ($place || $corrigerAssociation) {
             $parcours->save();
             $parcours->unsetRelation('pivotSequenceIntervenant');
         }
