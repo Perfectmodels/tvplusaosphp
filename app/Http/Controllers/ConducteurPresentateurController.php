@@ -618,14 +618,8 @@ class ConducteurPresentateurController extends Controller
 
         $ancienPos = (int) $sequence->position;
         $label = "#{$ancienPos} — {$sequence->title}";
+        // Sequence::deleted already compacts positions and recalculates durations.
         $sequence->delete();
-
-        Sequence::where('conducteur_id', $conducteur->id)
-            ->where('position', '>', $ancienPos)
-            ->eachById(function (Sequence $s) {
-                $s->timestamps = false;
-                $s->updateQuietly(['position' => $s->position - 1]);
-            });
 
         if ((int) ($conducteur->active_sequence_id ?? 0) === (int) $sequence->id) {
             $conducteur->timestamps = false;
