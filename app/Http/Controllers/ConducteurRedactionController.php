@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\StatutConducteurEnum;
+use App\Events\ConducteurChanged;
 use App\Enums\TypeSequenceEnum;
 use App\Models\Conducteur;
 use App\Models\Emission;
@@ -148,24 +149,31 @@ final class ConducteurRedactionController extends Controller
         );
 
         Gate::authorize('reorderSequences', $conducteur);
+        Gate::authorize('view', $conducteur);
+        abort_if($conducteur->date_locked_at !== null, 423, 'Ce conducteur est verrouillé.');
 
         $valid = $request->validate([
             'ordered_ids' => ['required', 'array', 'min:1'],
             'ordered_ids.*' => ['required', 'integer', 'distinct', 'exists:sequences,id'],
         ]);
         $orderedIds = array_values(array_map('intval', $valid['ordered_ids']));
-        $allIds = $conducteur->sequencesAvecMasques()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        // The editor only sends visible sequences; preserve masked items after them.
+        $allIds = $conducteur->sequences()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
         if (collect($orderedIds)->sort()->values()->all() !== $allIds) {
             return response()->json(['ok' => false, 'message' => 'Toutes les séquences du conducteur doivent être présentes une seule fois.'], 422);
         }
 
         DB::transaction(function () use ($conducteur, $orderedIds): void {
             Conducteur::query()->whereKey($conducteur->id)->lockForUpdate()->firstOrFail();
-            foreach ($orderedIds as $position => $id) {
-                $conducteur->sequencesAvecMasques()->whereKey($id)->update(['position' => $position + 1]);
+            $maskedIds = $conducteur->sequencesAvecMasques()->where('masque', true)
+                ->pluck('id')->map(fn ($id) => (int) $id)->all();
+            foreach (array_merge($orderedIds, $maskedIds) as $position => $id) {
+                \App\Models\Sequence::query()->where('conducteur_id', $conducteur->id)
+                    ->whereKey($id)->update(['position' => $position + 1]);
             }
             ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
         });
+        ConducteurChanged::dispatch((int) $conducteur->id);
 
         return response()->json([
             'ok' => true,
