@@ -67,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
             $alertes = collect();
             if (auth()->check()) {
                 try {
-                    $alertes = AlerteInfo::query()->actives()->latest()->limit(3)->get();
+                    $alertes = AlerteInfo::query()->actives()->limit(3)->get();
                 } catch (\Throwable) {
                     // La table peut ne pas encore exister lors d'un déploiement
                     // progressif : le site reste utilisable sans alertes.

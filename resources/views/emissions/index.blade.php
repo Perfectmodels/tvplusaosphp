@@ -60,13 +60,13 @@
     <div class="space-y-6" data-bulk-list="bulk-emissions">
         @forelse($emissionGroups as $format => $programmes)
             <section class="rounded-xl border border-outline-variant bg-white" aria-labelledby="format-{{ $loop->index }}">
-                <div class="flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-outline-variant bg-slate-50 px-4 py-4 sm:px-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-outline-variant bg-slate-50 px-4 py-3 sm:px-5">
                     <h2 id="format-{{ $loop->index }}" class="text-lg font-bold text-primary">{{ $formatLabels[$format] ?? 'Format à renseigner' }}</h2>
                     <span class="text-xs text-on-surface-variant">{{ $programmes->count() }} programme(s) sur cette page</span>
                 </div>
                 <div class="divide-y divide-slate-100">
                     @foreach($programmes as $emission)
-                        <article class="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 xl:grid-cols-4" aria-label="{{ $emission->nom }}">
+                        <article class="grid grid-cols-1 gap-3 p-3 sm:p-4 md:grid-cols-2 xl:grid-cols-4" aria-label="{{ $emission->nom }}">
                             <div class="md:col-span-2 xl:col-span-4">@include('_partials.bulk-delete-checkbox', ['resource' => 'emissions', 'record' => $emission, 'label' => $emission->nom])</div>
                             <div class="min-w-0">
                                 <a href="{{ route('emissions.show', $emission) }}" class="font-bold leading-snug text-primary hover:underline">{{ $emission->nom }}</a>

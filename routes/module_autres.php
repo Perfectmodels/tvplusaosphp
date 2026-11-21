@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\ConducteurEmissionController;
+use App\Http\Controllers\ConducteurExportController;
 use App\Http\Controllers\ConducteurPresenceController;
 use App\Http\Controllers\ConducteurPresentateurController;
 use App\Http\Controllers\ConducteurRedactionController;
@@ -66,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/emission/create', [ConducteurEmissionController::class, 'create'])->name('emission.create');
         Route::post('/emission', [ConducteurEmissionController::class, 'store'])->name('emission.store');
         Route::get('/emission/{conducteur}', [ConducteurEmissionController::class, 'show'])->name('emission.show');
+        Route::get('/emission/{conducteur}/export-pdf', [ConducteurExportController::class, 'export'])->name('emission.export-pdf');
         Route::post('/emission/{conducteur}/presentateur', [ConducteurEmissionController::class, 'updatePresentateur'])->name('presentateur.update');
         Route::get('/emission/{conducteur}/interactions', [ConducteurPresentateurController::class, 'interactionMessages'])->name('emission.interactions.index');
         Route::post('/emission/{conducteur}/qr', [EmissionInteractionController::class, 'generateQr'])->name('emission.interactions.generate-qr');

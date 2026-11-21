@@ -40,16 +40,27 @@
         to   { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* --- Alerte info : clignotement rouge persistant --- */
+    /* --- Alerte info : clignotement rouge persistant + effet pop --- */
     .tv-notif-alerte {
         padding: .8rem .9rem;
         color: #450a0a;
         border-color: rgb(252 165 165);
         background: rgb(254 242 242);
-        animation: tv-notif-in .28s ease-out both, tv-alerte-clignotante 1.25s ease-in-out infinite;
+        animation: tv-notif-in .28s ease-out both,
+                   tv-alerte-clignotante .9s ease-in-out infinite,
+                   tv-alerte-pop 2.2s ease-out infinite;
     }
     .tv-notif-alerte .tv-alerte-dot {
-        animation: tv-alerte-dot 1.25s ease-in-out infinite;
+        animation: tv-alerte-dot .9s ease-in-out infinite;
+    }
+    .tv-alerte-dot {
+        background-color: rgb(185, 28, 28);
+        border-radius: 9999px;
+    }
+    @keyframes tv-alerte-pop {
+        0%  { box-shadow: 0 0 0 0 rgba(185, 28, 28, .5), 0 10px 24px rgba(15, 23, 42, .18); }
+        55% { box-shadow: 0 0 0 5px rgba(185, 28, 28, .18), 0 10px 24px rgba(15, 23, 42, .18); }
+        100%{ box-shadow: 0 0 0 0 rgba(185, 28, 28, 0), 0 10px 24px rgba(15, 23, 42, .18); }
     }
     @keyframes tv-alerte-clignotante {
         0%, 100% {
@@ -60,12 +71,12 @@
         50% {
             border-color: rgb(185, 28, 28);
             background-color: rgb(255, 255, 255);
-            box-shadow: 0 16px 38px rgba(15, 23, 42, .18), 0 0 0 .45rem rgba(185, 28, 28, 0);
+            box-shadow: 0 16px 38px rgba(15, 23, 42, .18), 0 0 0 3px rgba(185, 28, 28, .25);
         }
     }
     @keyframes tv-alerte-dot {
         0%, 100% { background-color: rgb(185, 28, 28); transform: scale(1); opacity: 1; }
-        50% { background-color: rgb(248 113 113); transform: scale(1.35); opacity: .75; }
+        50%      { background-color: rgb(248, 113, 113); transform: scale(1.4); opacity: .85; }
     }
 
     /* --- Message en cours du conducteur --- */
@@ -134,7 +145,8 @@
         .tv-notif-alerte,
         .tv-bulle-sequence.is-live,
         .tv-bulle-live-dot,
-        .tv-alerte-dot {
+        .tv-alerte-dot,
+        .tv-alerte-pop {
             animation: none !important;
         }
     }

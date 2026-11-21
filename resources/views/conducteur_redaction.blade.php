@@ -162,6 +162,12 @@
                     <i class="fa-solid fa-comment-dots text-primary" aria-hidden="true"></i>
                     Discussion interne
                 </button>
+                <a href="{{ route('conducteurs.emission.export-pdf', $conducteur) }}"
+                   class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-outline/30 bg-white px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                   title="Exporter le script présentateur et les données du conducteur en PDF (impression)">
+                    <i class="fa-solid fa-file-pdf text-primary" aria-hidden="true"></i>
+                    Exporter (PDF)
+                </a>
                 @can('update', $conducteur)
                     <details class="group relative">
                         <summary class="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-outline/30 bg-white px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
@@ -199,6 +205,12 @@
                                         <input id="alerte-expire" name="expire_at" type="datetime-local"
                                                class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                                     </div>
+                                </div>
+                                <div>
+                                    <label for="alerte-ordre" class="mb-1 block text-xs font-semibold text-on-surface-variant">Ordre dans la pile (facultatif)</label>
+                                    <input id="alerte-ordre" name="ordre" type="number" min="0" step="1"
+                                           placeholder="Par défaut : passe au-dessus des alertes précédentes"
+                                           class="w-full rounded-lg border border-outline/30 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                                 </div>
                                 <button type="submit"
                                         class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-error px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error">

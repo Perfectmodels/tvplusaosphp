@@ -159,7 +159,7 @@ Routes publiques : `invitations.*`, `emission-interactions.*`, `sondage.*`.
 Contrairement aux anciennes alertes liées à une séquence, une alerte info est désormais un objet autonome créé par l'administration :
 
 - formulaire « Diffuser une alerte » dans la barre d'actions du conducteur (admin/superadmin) ;
-- champs : titre, message, niveau (information / avertissement / urgence), date d'expiration facultative ;
+- champs : titre, message, niveau (information / avertissement / urgence), date d'expiration facultative, **ordre dans la pile (facultatif)** ; l'alerte avec l'ordre le plus élevé passe au-dessus des alertes précédentes ;
 - chaque alerte s'affiche sur **toutes les pages internes** sous forme de **bulle pop-up fixe en haut à droite**, avec un **clignotement rouge persistant** ;
 - les administrateurs peuvent retirer une alerte (passage à `actif = false`) ; chaque utilisateur peut aussi masquer une bulle localement sur la page courante ;
 - les alertes expirées ne sont plus affichées.
@@ -180,7 +180,45 @@ Sur la vue conducteur (`conducteur_redaction.blade.php`), `resources/views/_part
 - Sur la page conducteur, les bulles locales prennent le relais : le script global détecte `window.__tvBullesConducteur` et ne démarre pas, pour éviter tout doublon.
 - L'endpoint est protégé par `auth`, `verified` et la permission `conducteurs.view` (`Gate::allows('viewAny', Conducteur::class)`).
 
-Table : `alerte_infos`. Migration : `2026_11_20_191249_create_alerte_infos_table.php`. La table a été créée en production le 20/11/2026 et la migration enregistrée dans la table `migrations`.
+Table : `alerte_infos` (colonne `ordre` ajoutée par la migration `2026_11_21_000001_add_ordre_to_alerte_infos_table.php`). La table a été créée en production le 20/11/2026 et la migration enregistrée dans la table `migrations`.
+
+## 17. Alertes info : classement choisi et effet pop-up renforcé (21/11/2026)
+
+**Demande.** Classer les alertes info dans le conducteur en choisissant l'ordre ; revoir l'affiche de l'alerte info pour plus d'effet pop-up et de clignottement.
+
+**Constat préalable — alertes invisibles sur la prod :** le scope `actives()` était déclaré `: void` : `AlerteInfo::query()->actives()` renvoyait `null` et le chaînage (`->latest()`) du `View::composer` de `layouts.app` levait une `Error`, silencieusement ignorée par le bloc `catch` — **les bulles d'alerte ne s'affichaient donc pas du tout sur la prod**. Le scope retourne maintenant le `Builder` (vérifié localement : `actives()` → `Builder`, chaînable).
+
+**Implémentation.**
+
+- Migration `2026_11_21_000001_add_ordre_to_alerte_infos_table.php` : colonne `ordre` (`integer unsigned NOT NULL DEFAULT 0`).
+- `AlerteInfo` : `ordre` dans `fillable` et `casts` (`integer`) ; `scopeActives()` retournant `Builder`, trié `orderByDesc('ordre')->orderByDesc('id')` (l'alerte la plus élevée passe au-dessus ; nouvelle alerte sans ordre passe au-dessus des alertes précédentes, car le contrôleur assigne `max(ordre)+1` quand le champ est vide).
+- `AlerteInfoController@store` : champ `ordre` (`sometimes nullable integer 0..9999`) ; auto-assigné au-dessus des alertes existantes quand vide.
+- Formulaire « Diffuser une alerte » (`conducteur_redaction.blade.php`) : nouveau champ « Ordre dans la pile (facultatif) ».
+- Effets visuels renforcés (`notifications-stack.blade.php`) : clignotement rouge plus fréquent (0,9 s) et puissant ; nouvelle animation `tv-alerte-pop` (halo expandant autour de la bulle, effet « pop ») ; point rouge plus grand et animé plus vite ; l'icône de niveau tourne légèrement.
+
+**Tests.** `AlerteInfoOrdreTest` (3 tests, 6 assertions) : classement par ordre choisi (10, 7, 5) ; l'admin choisit l'ordre à la diffusion (9 puis 3) ; alerte sans ordre passe au-dessus des alertes précédentes (3 puis 2). `AlerteInfoGlobaleTest` couvre l'affichage des bulles sur les pages internes (inchangé).
+
+**À appliquer sur la prod avant le déploiement :**
+
+```sql
+ALTER TABLE `alerte_infos` ADD COLUMN `ordre` INTEGER UNSIGNED NOT NULL DEFAULT 0 AFTER `expire_at`;
+```
+
+(ou `php artisan migrate` depuis un environnement qui a accès à la prod — la migration est enregistrée dans `migrations`.)
+
+## 18. Export imprimable du conducteur d'émission en PDF (21/11/2026)
+
+**Demande.** Exporter le script présentateur et le conducteur de l'émission, et toutes ses données, en PDF pour impression.
+
+**Implémentation.**
+
+- `app/Services/ConducteurPdfExporter.php` : générateur PDF minimal (sans dépendance). Émet : l'en-tête du conducteur (émission, code, dates, statut, présentateur, durée totale/cible) ; la section **« Script présentateur — Chronologie et notes »** (par séquence : position, heure début/fin, durée, type, statut, notes présentateur, résumé, intervenants) ; la section **« Données complètes du conducteur — Séquences et statuts »** (détails de chaque séquence + statut antenne). Génération sur A4, police Helvetica/Helvetica-Bold, encodage ISO-8859-1 (accents valides), pagination (~40 lignes/page), xref et `startxref` validés.
+- `app/Http/Controllers/ConducteurExportController.php` + route `GET /conducteurs/emission/{conducteur}/export-pdf` (`conducteurs.emission.export-pdf`) : export imprimable, `Content-Type: application/pdf`, nom de fichier `Conducteur_<slug>_<YYYYMMDD>.pdf` ; autorisé par la policy `view` sur le conducteur.
+- Bouton « Exporter (PDF) » dans l'en-tête du conducteur (`conducteur_redaction.blade.php`), visible pour les rôles autorisés.
+
+**Tests.** `ConducteurExportPdfTest` (2 tests, 6 assertions) : l'export retourne 200 + PDF valide (contient « Conducteur », « Script », « Evenement », « Statut ») ; refus (403) sans permission `view`.
+
+**Vérification.** Suites ciblées passées sur SQLite en mémoire (`AlerteInfoOrdreTest`, `ConducteurExportPdfTest`, `AlerteInfoGlobaleTest`, `NotificationsGlobalesTest`, ... — 17+5 tests). Dans le navigateur sur la prod : le bouton « Exporter (PDF) » est présent sur `/conducteurs/emission/68` et `GET /conducteurs/emission/68/export-pdf` renvoie 200 `application/pdf` (flux commençant par `%PDF-1.4`). Après la mise en place de la colonne `ordre` (voir 17), vérifier qu'une alerte diffusée apparaît bien dans la pile de la prod.
 
 ## 16. PWA
 

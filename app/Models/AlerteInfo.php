@@ -21,6 +21,7 @@ class AlerteInfo extends Model
         'actif',
         'created_by',
         'expire_at',
+        'ordre',
     ];
 
     protected function casts(): array
@@ -29,6 +30,7 @@ class AlerteInfo extends Model
             'niveau' => NiveauAlerteEnum::class,
             'actif' => 'boolean',
             'expire_at' => 'datetime',
+            'ordre' => 'integer',
         ];
     }
 
@@ -44,11 +46,13 @@ class AlerteInfo extends Model
     }
 
     /** @param Builder<AlerteInfo> $query */
-    public function scopeActives(Builder $query): void
+    public function scopeActives(Builder $query): Builder
     {
-        $query->where('actif', true)
+        return $query->where('actif', true)
             ->where(function (Builder $q): void {
                 $q->whereNull('expire_at')->orWhere('expire_at', '>', now());
-            });
+            })
+            ->orderByDesc('ordre')
+            ->orderByDesc('id');
     }
 }
