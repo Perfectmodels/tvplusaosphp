@@ -100,19 +100,19 @@ final class ConducteurLifecycleController extends Controller
     }
 
     /**
-     * @param list<StatutConducteurEnum> $autorisés
+     * @param list<StatutConducteurEnum> $autorisations
      * @param array<string, mixed> $champs
      */
     private function transition(
         Conducteur $conducteur,
-        array $autorisés,
+        array $autorisations,
         StatutConducteurEnum $cible,
         array $champs = [],
         bool $interdireAntenneActive = false,
     ): void {
-        DB::transaction(static function () use ($conducteur, $autorisés, $cible, $champs, $interdireAntenneActive): void {
+        DB::transaction(static function () use ($conducteur, $autorisations, $cible, $champs, $interdireAntenneActive): void {
             $locked = Conducteur::query()->lockForUpdate()->findOrFail($conducteur->id);
-            abort_unless(in_array($locked->status, $autorisés, true), 422, 'Transition impossible depuis le statut actuel.');
+            abort_unless(in_array($locked->status, $autorisations, true), 422, 'Transition impossible depuis le statut actuel.');
             abort_if(
                 $locked->date_locked_at !== null && $locked->status !== StatutConducteurEnum::Archive,
                 423,
