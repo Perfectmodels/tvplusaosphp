@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StatutConducteurEnum;
+use App\Enums\StatutEtapeWorkflowEnum;
 use App\Services\ConducteurCalculatorService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -215,6 +216,23 @@ class Conducteur extends Model
         if ($sequences->count() === 0) {
             return 0;
         }
+        if ((string) $this->type === 'redaction') {
+            // Progression réelle des cinq jalons, et non uniquement du dernier.
+            $total = $sequences->count() * count(\App\Models\Sequence::WORKFLOW_ORDER);
+            $valides = $sequences->sum(static function (Sequence $sequence): int {
+                $fait = 0;
+                foreach (Sequence::WORKFLOW_ORDER as $colonne) {
+                    if ($sequence->{$colonne} === StatutEtapeWorkflowEnum::Termine) {
+                        $fait++;
+                    }
+                }
+
+                return $fait;
+            });
+
+            return $total > 0 ? (int) round(($valides / $total) * 100) : 0;
+        }
+
         $termine = $sequences->filter(
             fn ($s) => $s->statut_diffusion && $s->statut_diffusion->value === 'Terminé'
         )->count();
@@ -322,9 +340,16 @@ class Conducteur extends Model
         });
 
         static::saved(function (self $conducteur) {
+            // Les séquences recalculent déjà les durées sur création et changement.
+            if (! $conducteur->wasChanged(['heure_debut_emission_calc', 'emission_id', 'date_edition'])) {
+                return;
+            }
             try {
                 ConducteurCalculatorService::recalculerHeures($conducteur);
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Recalcul conducteur impossible', [
+                    'conducteur_id' => $conducteur->id, 'error' => $e->getMessage(),
+                ]);
             }
         });
     }
