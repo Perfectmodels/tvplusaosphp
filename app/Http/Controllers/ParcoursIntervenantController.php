@@ -324,6 +324,9 @@ class ParcoursIntervenantController extends Controller
             ),
             'deja_fait' => (bool) ($resultat['deja_fait'] ?? false),
             'place_dans_conducteur' => $placeDansConducteur,
+            'rattache_conducteur' => (bool) $parcours->conducteur_id,
+            'affecte_sequence' => (bool) $parcours->sequence_intervenant_id,
+            'en_attente_affectation' => ! $parcours->sequence_intervenant_id,
             'parcours' => $this->payload($parcours),
         ]);
     }
@@ -647,6 +650,12 @@ class ParcoursIntervenantController extends Controller
 
         return [
             'id' => (int) $p->id,
+            'rattache_conducteur' => (bool) $p->conducteur_id,
+            'affecte_sequence' => (bool) $p->sequence_intervenant_id,
+            'en_attente_affectation' => ! $p->sequence_intervenant_id,
+            'statut_affectation' => $p->sequence_intervenant_id
+                ? 'affecte_sequence'
+                : ($p->conducteur_id ? 'conducteur_sans_sequence' : 'en_attente_conducteur'),
             'etapes' => $etapes,
             'etape_courante' => $courante,
             'etape_courante_label' => collect($etapes)->firstWhere('value', $courante)['label'] ?? 'Terminé',
