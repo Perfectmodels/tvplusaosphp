@@ -1,0 +1,43 @@
+name: Admin dashboard checks
+
+on:
+  pull_request:
+    paths:
+      - "app/Http/Controllers/DashboardController.php"
+      - "app/Services/AdminDashboardAnalyticsService.php"
+      - "app/Services/RoleDashboardService.php"
+      - "resources/views/dashboards/admin.blade.php"
+      - "resources/css/dashboard-admin.css"
+      - "vite.config.js"
+      - "tests/Feature/AdminDashboardAnalyticsTest.php"
+      - ".github/workflows/admin-dashboard-checks.yml"
+
+jobs:
+  php:
+    name: PHP lint and analytics feature tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, sqlite3, pdo_sqlite, dom, xml, gd, zip, bcmath
+          coverage: none
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: php -l app/Services/AdminDashboardAnalyticsService.php
+      - run: php -l app/Http/Controllers/DashboardController.php
+      - run: php -l tests/Feature/AdminDashboardAnalyticsTest.php
+      - run: cp .env.example .env && php artisan key:generate
+      - run: php artisan test --filter=AdminDashboardAnalyticsTest
+
+  assets:
+    name: Vite production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
