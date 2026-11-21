@@ -90,9 +90,9 @@ class ConducteurPresentateurReorderTest extends TestCase
         $this->assertStringContainsString("x-data='{ presentateurId:", $html);
         $this->assertStringContainsString("x-init='initialize({", $html);
         $this->assertLessThan(
-            strpos($html, 'Programmation du conducteur'),
             strpos($html, 'Antenne & notes présentateur'),
-            'Le panneau notes/chrono doit apparaître avant le tableau.'
+            strpos($html, 'Programmation du conducteur'),
+            'Le tableau de programmation doit apparaître avant les outils antenne.'
         );
         $this->assertStringContainsString('QR code public', $html);
         $this->assertStringContainsString('max-w-4xl', $html);
