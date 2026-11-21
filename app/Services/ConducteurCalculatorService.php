@@ -18,19 +18,24 @@ final class ConducteurCalculatorService
             $duree = max(0, (int) ($seq->duration_seconds ?? 120));
             $finSec = $debutSec + $duree;
 
-            $seq->timestamps = false;
-            $seq->updateQuietly([
-                'heure_debut_calculee' => self::secToTime($debutSec),
-                'heure_fin_calculee'   => self::secToTime($finSec),
-            ]);
+            $heureDebut = self::secToTime($debutSec);
+            $heureFin = self::secToTime($finSec);
+            if ((string) $seq->heure_debut_calculee !== $heureDebut
+                || (string) $seq->heure_fin_calculee !== $heureFin) {
+                $seq->timestamps = false;
+                $seq->updateQuietly([
+                    'heure_debut_calculee' => $heureDebut,
+                    'heure_fin_calculee' => $heureFin,
+                ]);
+            }
 
             $cumulSec += $duree;
         }
 
-        $conducteur->timestamps = false;
-        $conducteur->updateQuietly([
-            'total_duration' => $cumulSec,
-        ]);
+        if ((int) $conducteur->total_duration !== $cumulSec) {
+            $conducteur->timestamps = false;
+            $conducteur->updateQuietly(['total_duration' => $cumulSec]);
+        }
     }
 
     public static function formatDuree(int $secondes): string
