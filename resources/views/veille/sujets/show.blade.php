@@ -57,19 +57,19 @@ $remixStatusMap = [
                     </div>
                     @endif
 
-                    <div class="mobile-wrap-tabs flex border-b border-surface-variant gap-3 sm:gap-8 overflow-x-auto">
-                        <button class="tab-btn px-1 py-4 text-sm font-semibold tracking-[0.05em] border-b-2 border-primary text-primary whitespace-nowrap" data-tab-target="tab-contenu">
+                    <div class="mobile-wrap-tabs flex border-b border-surface-variant gap-3 sm:gap-8 overflow-x-auto" role="tablist" aria-label="Rubriques du sujet de veille">
+                        <button class="tab-btn px-1 py-4 text-sm font-semibold tracking-[0.05em] border-b-2 border-primary text-primary whitespace-nowrap" data-tab-target="tab-contenu" id="veille-tab-contenu" role="tab" aria-controls="tab-contenu" aria-selected="true" tabindex="0">
                             Contenu
                         </button>
-                        <button class="tab-btn px-1 py-4 text-sm font-semibold tracking-[0.05em] text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap" data-tab-target="tab-historique">
+                        <button class="tab-btn px-1 py-4 text-sm font-semibold tracking-[0.05em] text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap" data-tab-target="tab-historique" id="veille-tab-historique" role="tab" aria-controls="tab-historique" aria-selected="false" tabindex="-1">
                             Historique
                         </button>
-                        <button class="tab-btn px-1 py-4 text-sm font-semibold tracking-[0.05em] text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap" data-tab-target="tab-remixes">
+                        <button class="tab-btn px-1 py-4 text-sm font-semibold tracking-[0.05em] text-on-surface-variant border-b-2 border-transparent hover:text-on-surface whitespace-nowrap" data-tab-target="tab-remixes" id="veille-tab-remixes" role="tab" aria-controls="tab-remixes" aria-selected="false" tabindex="-1">
                             Remixes IA <span class="ml-2 px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-xs font-bold">{{ $subject->remixes->count() }}</span>
                         </button>
                     </div>
 
-                    <div id="tab-contenu" class="tab-panel pt-4">
+                    <div id="tab-contenu" class="tab-panel pt-4" role="tabpanel" aria-labelledby="veille-tab-contenu" tabindex="0">
                         @include('_partials.veille-gabon-analysis')
                         @if($subject->content)
                         <article class="prose prose-slate max-w-none text-[15px] leading-7 text-on-surface whitespace-pre-wrap break-words">
@@ -98,7 +98,7 @@ $remixStatusMap = [
                         @endif
                     </div>
 
-                    <div id="tab-historique" class="tab-panel pt-4 hidden">
+                    <div id="tab-historique" class="tab-panel pt-4 hidden" role="tabpanel" aria-labelledby="veille-tab-historique" tabindex="0" hidden>
                         <div class="space-y-3">
                             <div class="flex gap-4">
                                 <div class="flex flex-col items-center">
@@ -136,7 +136,7 @@ $remixStatusMap = [
                         </div>
                     </div>
 
-                    <div id="tab-remixes" class="tab-panel pt-4 hidden">
+                    <div id="tab-remixes" class="tab-panel pt-4 hidden" role="tabpanel" aria-labelledby="veille-tab-remixes" tabindex="0" hidden>
                         @if($subject->remixes->count())
 @if($subject->remixes->contains(fn ($item) => auth()->user()->can('delete', $item)))
 @include('_partials.bulk-delete-toolbar', ['resource' => 'remixes-veille', 'parentId' => $subject->id])
@@ -326,29 +326,29 @@ $remixStatusMap = [
     </div>
 
     @can('update', $subject)
-    <div id="editSubjectModal" data-modal-backdrop class="fixed inset-0 z-[70] hidden">
+    <div id="editSubjectModal" data-modal-backdrop role="dialog" aria-modal="true" aria-labelledby="edit-veille-title" tabindex="-1" class="fixed inset-0 z-[70] hidden focus:outline-none">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-modal-close></div>
         <div class="relative z-10 flex items-start sm:items-center justify-center min-h-screen p-4 overflow-y-auto">
             <form method="POST" action="{{ route('veille.sujets.update', $subject) }}" class="w-full max-w-2xl bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant overflow-hidden">
                 @csrf @method('PUT')
                 <div class="px-6 py-4 border-b border-surface-variant flex justify-between items-center bg-surface-container-low/40">
                     <div>
-                        <h3 class="text-[20px] font-bold text-on-background">Modifier le sujet</h3>
+                        <h3 id="edit-veille-title" class="text-xl font-bold text-on-surface">Modifier le sujet</h3>
                         <p class="text-sm text-on-surface-variant mt-1">Mettez à jour le titre, la catégorie ou le statut.</p>
                     </div>
-                    <button type="button" data-modal-close class="w-10 h-10 rounded-full hover:bg-surface-variant text-on-surface-variant transition flex items-center justify-center">
+                    <button type="button" data-modal-close aria-label="Fermer le formulaire de veille" class="inline-flex h-11 w-11 items-center justify-center rounded-lg text-on-surface-variant transition hover:bg-surface-container-low">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
                 <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                     <div>
-                        <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Titre *</label>
-                        <input name="title" required value="{{ old('title',$subject->title) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                        <label for="veille-edit-title" class="mb-2 block text-sm font-semibold text-on-surface">Titre *</label>
+                        <input name="title" id="veille-edit-title" required value="{{ old('title',$subject->title) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Catégorie</label>
-                            <select name="category" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                            <label for="veille-edit-category" class="mb-2 block text-sm font-semibold text-on-surface">Catégorie</label>
+                            <select name="category" id="veille-edit-category" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                                 <option value="">— Non classé —</option>
                                 @foreach(\App\Enums\PoleRubriqueEnum::selectOptions() as $v => $l)
                                 <option value="{{ $v }}" @selected((string) old('category', $subject->category?->value) === $v)>{{ $l }}</option>
@@ -356,8 +356,8 @@ $remixStatusMap = [
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Statut</label>
-                            <select name="status" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base">
+                            <label for="veille-edit-status" class="mb-2 block text-sm font-semibold text-on-surface">Statut</label>
+                            <select name="status" id="veille-edit-status" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base">
                                 @foreach(['draft'=>'Brouillon','pending'=>'En attente','approved'=>'Retenu','rejected'=>'Rejeté','archived'=>'Archivé'] as $v=>$l)
                                 <option value="{{ $v }}" @selected(old('status',$subject->status)===$v)>{{ $l }}</option>
                                 @endforeach
@@ -365,17 +365,17 @@ $remixStatusMap = [
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Résumé</label>
-                        <textarea name="summary" rows="3" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">{{ old('summary',$subject->summary) }}</textarea>
+                        <label for="veille-edit-summary" class="mb-2 block text-sm font-semibold text-on-surface">Résumé</label>
+                        <textarea name="summary" id="veille-edit-summary" rows="3" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">{{ old('summary',$subject->summary) }}</textarea>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Priorité (1-10)</label>
-                            <input type="number" min="1" max="10" name="priority" value="{{ old('priority',$subject->priority) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                            <label for="veille-edit-priority" class="mb-2 block text-sm font-semibold text-on-surface">Priorité (1-10)</label>
+                            <input type="number" min="1" max="10" name="priority" id="veille-edit-priority" value="{{ old('priority',$subject->priority) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">URL source</label>
-                            <input name="url" type="url" value="{{ old('url',$subject->url) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
+                            <label for="veille-edit-url" class="mb-2 block text-sm font-semibold text-on-surface">URL source</label>
+                            <input name="url" id="veille-edit-url" type="url" value="{{ old('url',$subject->url) }}" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-primary-fixed focus:border-primary-fixed">
                         </div>
                     </div>
                 </div>
@@ -395,23 +395,80 @@ $remixStatusMap = [
 (function(){
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabPanels = document.querySelectorAll('.tab-panel');
-    tabBtns.forEach(b => b.addEventListener('click', () => {
-        const target = b.dataset.tabTarget;
+    function activateVeilleTab(button) {
+        const target = button.dataset.tabTarget;
         tabBtns.forEach(x => {
-            x.classList.remove('border-primary','text-primary');
-            x.classList.add('border-transparent','text-on-surface-variant');
+            const active = x === button;
+            x.classList.toggle('border-primary', active);
+            x.classList.toggle('text-primary', active);
+            x.classList.toggle('border-transparent', !active);
+            x.classList.toggle('text-on-surface-variant', !active);
+            x.setAttribute('aria-selected', String(active));
+            x.tabIndex = active ? 0 : -1;
         });
-        b.classList.add('border-primary','text-primary');
-        b.classList.remove('border-transparent','text-on-surface-variant');
-        tabPanels.forEach(p => p.classList.toggle('hidden', p.id !== target));
-    }));
+        tabPanels.forEach(panel => {
+            const hidden = panel.id !== target;
+            panel.classList.toggle('hidden', hidden);
+            panel.hidden = hidden;
+        });
+    }
+    tabBtns.forEach((button, index) => {
+        button.addEventListener('click', () => activateVeilleTab(button));
+        button.addEventListener('keydown', event => {
+            const keys = {
+                ArrowRight: (index + 1) % tabBtns.length,
+                ArrowLeft: (index - 1 + tabBtns.length) % tabBtns.length,
+                Home: 0,
+                End: tabBtns.length - 1,
+            };
+            if (!(event.key in keys)) return;
+            event.preventDefault();
+            const next = tabBtns[keys[event.key]];
+            activateVeilleTab(next);
+            next.focus();
+        });
+    });
 
     const modals = document.querySelectorAll('[data-modal-backdrop]');
-    modals.forEach(m => {
-        const opens = document.querySelectorAll(`[data-modal-open="${m.id}"]`);
-        const closes = m.querySelectorAll('[data-modal-close]');
-        opens.forEach(b => b.addEventListener('click', e => { e.preventDefault(); m.classList.remove('hidden'); document.body.style.overflow='hidden'; }));
-        closes.forEach(c => c.addEventListener('click', e => { e.preventDefault(); m.classList.add('hidden'); document.body.style.overflow=''; }));
+    modals.forEach(modal => {
+        const opens = document.querySelectorAll('[data-modal-open="' + modal.id + '"]');
+        const closes = modal.querySelectorAll('[data-modal-close]');
+        let returnFocus = null;
+        let previousOverflow = '';
+        function closeModal() {
+            if (modal.classList.contains('hidden')) return;
+            modal.classList.add('hidden');
+            document.body.style.overflow = previousOverflow;
+            if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+            returnFocus = null;
+        }
+        opens.forEach(button => button.addEventListener('click', event => {
+            event.preventDefault();
+            if (!modal.classList.contains('hidden')) return;
+            returnFocus = button;
+            previousOverflow = document.body.style.overflow;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            (modal.querySelector('input[name="title"]') || modal).focus({ preventScroll: true });
+        }));
+        closes.forEach(button => button.addEventListener('click', event => {
+            event.preventDefault();
+            closeModal();
+        }));
+        modal.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { event.preventDefault(); closeModal(); return; }
+            if (event.key !== 'Tab') return;
+            const focusables = Array.from(modal.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => el.getClientRects().length);
+            if (!focusables.length) { event.preventDefault(); modal.focus(); return; }
+            const first = focusables[0], last = focusables[focusables.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+                event.preventDefault(); first.focus();
+            }
+        });
     });
 })();
 </script>

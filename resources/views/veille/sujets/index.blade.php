@@ -55,14 +55,15 @@ $statusSplash = [
 @section('content')
 <section class="mb-8" data-veille-live data-status-url="{{ route('veille.automation') }}" data-revision="{{ $automation['revision'] }}">
     @include('_partials.veille-automation')
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div class="mb-6 flex flex-col gap-4">
         <div>
-            <h2 class="text-[32px] font-bold tracking-[-0.02em] leading-10 text-on-background">Articles de veille</h2>
+            <h2 class="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">Articles de veille</h2>
             <p class="text-[16px] leading-6 text-on-surface-variant mt-1 font-normal">Collecte et classement automatiques des sources configurées.</p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="w-full">
             {{-- Recherche + filtres éditoriaux --}}
-            <form method="GET" action="{{ route('veille.sujets.index') }}" class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="{{ route('veille.sujets.index') }}"
+                  class="grid grid-cols-1 gap-3 rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,1fr))_auto]" aria-label="Filtrer les articles de veille">
                 <select name="country" aria-label="Périmètre de la veille" class="min-h-[44px] rounded-lg border border-outline-variant px-3 text-sm" onchange="this.form.submit()">
                     <option value="">Toutes les actualités</option>
                     <option value="GA" @selected(request('country') === 'GA')>Actualité gabonaise</option>
@@ -79,10 +80,10 @@ $statusSplash = [
                     <input type="hidden" name="{{ $filtre }}" value="{{ $valeur }}">
                 @endforeach
 
-                <div class="relative min-w-[220px] flex-1">
+                <div class="relative min-w-0 sm:col-span-2 xl:col-span-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm"></i>
-                    <input type="search" name="q" value="{{ $rechercheVeille }}" placeholder="Rechercher un sujet, mot-clé ou résumé…"
-                           class="w-full min-h-[44px] rounded-lg border border-outline-variant bg-surface-container-lowest py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15">
+                    <input type="search" name="q" value="{{ $rechercheVeille }}" aria-label="Rechercher dans les articles de veille"
+                           placeholder="Titre, mot-clé, résumé…" class="ui-field w-full pl-9">
                 </div>
 
                 <select name="category" data-veille-refresh-options="categories" onchange="this.form.submit()"
@@ -102,10 +103,10 @@ $statusSplash = [
                     @endforeach
                 </select>
 
-                <button type="submit" class="btn-primary min-h-[44px]">Filtrer</button>
+                <button type="submit" class="ui-action ui-action--primary">Filtrer</button>
 
-                @if($currentCat !== '' || $rechercheVeille !== '' || $sourceSelectionnee !== '')
-                    <a href="{{ route('veille.sujets.index') }}" class="btn-outline min-h-[44px]">Réinitialiser</a>
+                @if($currentCat !== '' || $rechercheVeille !== '' || $sourceSelectionnee !== '' || request()->filled('country') || request()->filled('stream') || request()->filled('status'))
+                    <a href="{{ route('veille.sujets.index') }}" class="ui-action ui-action--outline">Réinitialiser</a>
                 @endif
             </form>
         </div>
@@ -149,7 +150,7 @@ $statusSplash = [
     </div>
 
     @if($subjects->count() === 0)
-    <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-[0_10px_30px_-10px_rgba(0,26,65,0.04)] p-16 text-center">
+    <div class="rounded-2xl border border-outline-variant bg-white px-5 py-10 text-center shadow-sm sm:p-12">
         <i class="fa-solid fa-list-tree text-[#001a41] text-6xl mb-6 opacity-70"></i>
         <h3 class="text-[24px] font-bold leading-8 text-on-background mb-3">{{ $rechercheVeille !== '' || $currentCat !== '' || $sourceSelectionnee !== '' || request()->filled('status') ? 'Aucun résultat pour ces filtres' : 'Aucun sujet importé' }}</h3>
         <p class="text-[16px] text-on-surface-variant mb-8 max-w-xl mx-auto">
@@ -157,17 +158,17 @@ $statusSplash = [
         </p>
         <div class="flex items-center justify-center gap-4 flex-wrap">
             @can('create', \App\Models\VeilleSubject::class)
-                <button type="button" data-modal-open="scrapeModal" class="inline-flex items-center gap-2 bg-primary-container text-on-primary-container px-6 py-3 rounded-lg font-semibold text-sm tracking-[0.05em] hover:opacity-90 active:scale-95 transition">
+                <button type="button" data-modal-open="scrapeModal" class="ui-action ui-action--primary">
                     <i class="fa-solid fa-cloud-arrow-down"></i> Importer un article
                 </button>
             @endcan
-            <a href="{{ route('veille.sources') }}" class="inline-flex items-center gap-2 border border-outline-variant text-on-surface-variant px-6 py-3 rounded-lg font-semibold text-sm tracking-[0.05em] hover:text-primary hover:border-primary transition">
+            <a href="{{ route('veille.sources') }}" class="ui-action ui-action--outline">
                 <i class="fa-solid fa-rss"></i> Voir les sources
             </a>
         </div>
     </div>
     @else
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
         @foreach($subjects as $subject)
         @php
             $splash = $statusSplash[$subject->status] ?? $statusSplash['pending'];
@@ -246,13 +247,15 @@ $statusSplash = [
 </section>
 
 @can('create', \App\Models\VeilleSubject::class)
-<div id="scrapeModal" data-modal-backdrop class="fixed inset-0 z-[70] hidden">
+<div id="scrapeModal" data-modal-backdrop role="dialog" aria-modal="true"
+     aria-labelledby="scrape-modal-title" tabindex="-1"
+     class="fixed inset-0 z-[70] hidden focus:outline-none">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" data-modal-close></div>
     <div class="relative z-10 flex items-start sm:items-center justify-center min-h-screen p-4 overflow-y-auto">
-        <div class="w-full max-w-2xl bg-surface-container-lowest rounded-2xl shadow-2xl border border-outline-variant overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-outline-variant overflow-hidden max-h-[92dvh] overflow-y-auto">
             <div class="px-6 py-4 border-b border-surface-variant flex justify-between items-center bg-surface-container-low/40">
                 <div>
-                    <h3 class="text-[20px] font-bold text-on-background">Importer un article via scraping</h3>
+                    <h3 id="scrape-modal-title" class="text-xl font-bold text-on-surface">Importer un article</h3>
                     <p class="text-sm text-on-surface-variant mt-1">Collez un lien d\'actualité (site web ou flux RSS).</p>
                 </div>
                 <button type="button" data-modal-close aria-label="Fermer" class="w-11 h-11 rounded-full hover:bg-surface-variant text-on-surface-variant transition flex items-center justify-center">
@@ -271,8 +274,8 @@ $statusSplash = [
                     @error('url')<p class="text-sm text-error mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Source associée (optionnel)</label>
-                    <select name="source_id" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base text-on-background">
+                    <label for="scrape-source" class="block text-sm font-semibold tracking-[0.05em] text-on-surface mb-2">Source associée (optionnel)</label>
+                    <select id="scrape-source" name="source_id" class="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-base text-on-background">
                         <option value="">Aucune</option>
                         @foreach($sources as $s)
                         <option value="{{ $s->id }}">{{ $s->name }} ({{ strtoupper($s->type) }})</option>
@@ -280,7 +283,7 @@ $statusSplash = [
                     </select>
                 </div>
 
-                <div id="scrapePreview" class="hidden space-y-3">
+                <div id="scrapePreview" class="hidden space-y-3" role="status" aria-live="polite">
                     <div class="h-px bg-surface-variant my-2"></div>
                     <div class="flex items-center gap-2 text-sm font-semibold tracking-wider uppercase text-on-surface-variant">
                         <i class="fa-solid fa-sparkles text-secondary"></i>
@@ -314,8 +317,47 @@ $statusSplash = [
     if (!modal) return;
 
     const closeEls = modal.querySelectorAll('[data-modal-close]');
-    document.addEventListener('click', e => { if (e.target.closest('[data-modal-open="scrapeModal"]')) { e.preventDefault(); modal.classList.remove('hidden'); document.body.style.overflow='hidden'; } });
-    closeEls.forEach(c => c.addEventListener('click', e => { e.preventDefault(); modal.classList.add('hidden'); document.body.style.overflow=''; }));
+    let focusBeforeOpen = null;
+    let overflowBeforeOpen = '';
+    function openScrapeModal(trigger) {
+        if (!modal.classList.contains('hidden')) return;
+        focusBeforeOpen = trigger;
+        overflowBeforeOpen = document.body.style.overflow;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        (modal.querySelector('#scrape_url') || modal).focus({ preventScroll: true });
+    }
+    function closeScrapeModal() {
+        if (modal.classList.contains('hidden')) return;
+        modal.classList.add('hidden');
+        document.body.style.overflow = overflowBeforeOpen;
+        if (focusBeforeOpen?.isConnected) focusBeforeOpen.focus({ preventScroll: true });
+        focusBeforeOpen = null;
+    }
+    document.addEventListener('click', e => {
+        const trigger = e.target.closest('[data-modal-open="scrapeModal"]');
+        if (!trigger) return;
+        e.preventDefault();
+        openScrapeModal(trigger);
+    });
+    closeEls.forEach(button => button.addEventListener('click', e => {
+        e.preventDefault();
+        closeScrapeModal();
+    }));
+    modal.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); closeScrapeModal(); return; }
+        if (e.key !== 'Tab') return;
+        const focusables = Array.from(modal.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(el => el.getClientRects().length);
+        if (!focusables.length) { e.preventDefault(); modal.focus(); return; }
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+            e.preventDefault(); first.focus();
+        }
+    });
 
     const csrf  = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const urlIn = document.getElementById('scrape_url');

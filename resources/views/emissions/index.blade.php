@@ -8,35 +8,51 @@
         : [];
 @endphp
 @section('content')
-    <div class="mb-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-on-surface-variant" aria-label="Résumé du catalogue">
-        <span><strong class="text-primary">{{ $stats['total'] }}</strong> émissions au catalogue</span>
-        <span><strong class="text-primary">{{ $stats['aujourdhui'] }}</strong> programmées {{ mb_strtolower($joursOptions[$jourActuel]) }}</span>
-        @if($stats['sans_horaire'])<span>{{ $stats['sans_horaire'] }} horaires à renseigner</span>@endif
-    </div>
+    <section class="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4"
+             aria-label="Indicateurs du catalogue des émissions">
+        <div class="ui-panel border-l-4 border-l-primary p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Au catalogue</p>
+            <p class="mt-2 text-2xl font-bold tabular-nums text-primary">{{ $stats['total'] }}</p>
+        </div>
+        <div class="ui-panel border-l-4 border-l-success p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Programmes actifs</p>
+            <p class="mt-2 text-2xl font-bold tabular-nums text-success">{{ $stats['actives'] }}</p>
+        </div>
+        <div class="ui-panel border-l-4 border-l-secondary p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                Programmées {{ mb_strtolower($joursOptions[$jourActuel]) }}
+            </p>
+            <p class="mt-2 text-2xl font-bold tabular-nums text-primary">{{ $stats['aujourdhui'] }}</p>
+        </div>
+        <div class="ui-panel border-l-4 border-l-warning p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horaires à renseigner</p>
+            <p class="mt-2 text-2xl font-bold tabular-nums text-on-surface">{{ $stats['sans_horaire'] }}</p>
+        </div>
+    </section>
 
-    <form method="GET" action="{{ route('emissions.index') }}" class="mb-6 rounded-xl border border-outline-variant bg-white p-4 sm:p-5" aria-label="Filtrer les émissions">
+    <form method="GET" action="{{ route('emissions.index') }}" class="mb-6 rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5" aria-label="Filtrer les émissions">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="sm:col-span-2 xl:col-span-1 min-w-0">
                 <label for="emission-search" class="mb-1 block text-xs font-semibold text-on-surface-variant">Rechercher un programme</label>
-                <input id="emission-search" name="q" value="{{ $q }}" type="search" placeholder="Nom, description ou catégorie…" class="min-h-[44px] w-full rounded-lg border border-outline-variant px-3 text-sm">
+                <input id="emission-search" name="q" value="{{ $q }}" type="search" placeholder="Nom, description ou catégorie…" class="ui-field">
             </div>
             <div class="min-w-0">
                 <label for="emission-type" class="mb-1 block text-xs font-semibold text-on-surface-variant">Format</label>
-                <select id="emission-type" name="type" class="min-h-[44px] w-full rounded-lg border border-outline-variant px-3 text-sm">
+                <select id="emission-type" name="type" class="ui-field">
                     <option value="">Tous les formats</option>
                     @foreach($optionsTypes as $value => $label)<option value="{{ $value }}" @selected((string) $filtreType === $value)>{{ $label }}</option>@endforeach
                 </select>
             </div>
             <div class="min-w-0">
                 <label for="emission-status" class="mb-1 block text-xs font-semibold text-on-surface-variant">Statut du programme</label>
-                <select id="emission-status" name="statut" class="min-h-[44px] w-full rounded-lg border border-outline-variant px-3 text-sm">
+                <select id="emission-status" name="statut" class="ui-field">
                     <option value="">Tous les statuts</option>
                     @foreach($optionsStatuts as $value => $label)<option value="{{ $value }}" @selected((string) $filtreStatut === $value)>{{ $label }}</option>@endforeach
                 </select>
             </div>
             <div class="min-w-0">
                 <label for="emission-day" class="mb-1 block text-xs font-semibold text-on-surface-variant">Jour de diffusion</label>
-                <select id="emission-day" name="jour" class="min-h-[44px] w-full rounded-lg border border-outline-variant px-3 text-sm">
+                <select id="emission-day" name="jour" class="ui-field">
                     <option value="">Tous les jours</option>
                     @foreach($joursOptions as $value => $label)<option value="{{ $value }}" @selected((string) $filtreJour === $value)>{{ $label }}</option>@endforeach
                 </select>
@@ -48,7 +64,7 @@
                 @if((string) $q !== '' || (string) $filtreType !== '' || (string) $filtreStatut !== '' || (string) $filtreJour !== '')
                     <a href="{{ route('emissions.index') }}" class="inline-flex min-h-[44px] items-center rounded-lg border border-outline-variant px-4 text-sm font-semibold text-primary">Réinitialiser</a>
                 @endif
-                <button type="submit" class="min-h-[44px] rounded-lg bg-primary px-5 text-sm font-semibold text-white">Filtrer</button>
+                <button type="submit" class="ui-action ui-action--primary">Filtrer</button>
             </div>
         </div>
     </form>
@@ -59,17 +75,17 @@
 
     <div class="space-y-6" data-bulk-list="bulk-emissions">
         @forelse($emissionGroups as $format => $programmes)
-            <section class="rounded-xl border border-outline-variant bg-white" aria-labelledby="format-{{ $loop->index }}">
-                <div class="flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-outline-variant bg-slate-50 px-4 py-3 sm:px-5">
+            <section class="overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm" aria-labelledby="format-{{ $loop->index }}">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant bg-surface-container-low px-4 py-3 sm:px-5">
                     <h2 id="format-{{ $loop->index }}" class="text-lg font-bold text-primary">{{ $formatLabels[$format] ?? 'Format à renseigner' }}</h2>
                     <span class="text-xs text-on-surface-variant">{{ $programmes->count() }} programme(s) sur cette page</span>
                 </div>
-                <div class="divide-y divide-slate-100">
+                <div class="divide-y divide-outline-variant/60">
                     @foreach($programmes as $emission)
                         <article class="grid grid-cols-1 gap-3 p-3 sm:p-4 md:grid-cols-2 xl:grid-cols-4" aria-label="{{ $emission->nom }}">
                             <div class="md:col-span-2 xl:col-span-4">@include('_partials.bulk-delete-checkbox', ['resource' => 'emissions', 'record' => $emission, 'label' => $emission->nom])</div>
                             <div class="min-w-0">
-                                <a href="{{ route('emissions.show', $emission) }}" class="font-bold leading-snug text-primary hover:underline">{{ $emission->nom }}</a>
+                                <a href="{{ route('emissions.show', $emission) }}" class="inline-flex min-h-11 items-center break-words text-base font-bold leading-snug text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary">{{ $emission->nom }}</a>
                                 @if($emission->sous_titre)<p class="mt-1 text-sm text-on-surface-variant">{{ $emission->sous_titre }}</p>@endif
                                 <div class="mt-2">{!! $emission->statut?->badge() ?? '' !!}</div>
                             </div>
@@ -89,7 +105,7 @@
                             <div class="flex flex-wrap items-start gap-2 xl:justify-end">
                                 @can('create', \App\Models\Conducteur::class)
                                     @if($emission->is_active)
-                                        <a href="{{ route('conducteurs.emission.create', ['emission_id' => $emission->id, 'date' => today()->toDateString()]) }}" class="inline-flex min-h-[44px] items-center rounded-lg bg-primary px-3 text-sm font-semibold text-white">Préparer un conducteur</a>
+                                        <a href="{{ route('conducteurs.emission.create', ['emission_id' => $emission->id, 'date' => today()->toDateString()]) }}" class="ui-action ui-action--primary">Préparer un conducteur</a>
                                     @endif
                                 @endcan
                                 @if(auth()->user()->can('update', $emission) || auth()->user()->can('delete', $emission))
@@ -115,10 +131,12 @@
                 </div>
             </section>
         @empty
-            <div class="rounded-xl border border-outline-variant bg-white p-8 text-center">
-                <p class="font-semibold text-primary">Aucune émission ne correspond à ces filtres.</p>
-                <a href="{{ route('emissions.index') }}" class="mt-3 inline-flex min-h-[44px] items-center text-sm text-primary underline">Afficher tout le catalogue</a>
-            </div>
+            <x-ui.empty-state title="Aucune émission ne correspond à ces filtres"
+                description="Modifiez votre recherche ou affichez l'ensemble des programmes." icon="fa-tv">
+                <x-slot:actions>
+                    <a href="{{ route('emissions.index') }}" class="ui-action ui-action--outline">Afficher tout le catalogue</a>
+                </x-slot:actions>
+            </x-ui.empty-state>
         @endforelse
     </div>
     @if($emissions->hasPages())

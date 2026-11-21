@@ -22,6 +22,16 @@
         @csrf
         <input type="hidden" name="_person_form" value="1">
         @if($isEdit) @method('PUT') @endif
+        @if($errors->any())
+            <div role="alert" aria-live="assertive" class="ui-feedback ui-feedback--error" tabindex="-1">
+                <h2 class="font-semibold">Certaines informations doivent être corrigées :</h2>
+                <ul class="mt-2 list-inside list-disc space-y-1">
+                    @foreach($errors->all() as $message)
+                        <li>{{ $message }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
         <!-- ===================== SECTION IDENTITÉ (prototype nouve_intervenant.html) ===================== -->
         <div class="bg-surface rounded-xl shadow-sm border border-outline-variant p-6">
@@ -29,7 +39,7 @@
                 <!-- PHOTO dashed uploader -->
                 <div class="w-full lg:w-52 shrink-0" data-portrait data-portrait-fallback="{{ 'https://ui-avatars.com/api/?name='.urlencode($intervenant->initiales ?: 'IV').'&background=0054cd&color=ffffff' }}">
                     <div id="{{ $randId }}-photo-box" class="border-2 border-dashed border-outline-variant rounded-xl h-64 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container-low transition-colors group relative overflow-hidden">
-                        <img id="{{ $randId }}-photo-preview" data-portrait-preview src="{{ $intervenant->photoUrl }}"
+                        <img id="{{ $randId }}-photo-preview" data-portrait-preview src="{{ $intervenant->photoUrl }}" alt="Aperçu de la photo de l'intervenant"
                              class="absolute inset-0 w-full h-full object-cover {{ $intervenant->photo || $intervenant->photoUrl ? '' : 'hidden' }}"
                              onerror="this.onerror=null;this.classList.add('hidden');">
                         <div id="{{ $randId }}-photo-empty" data-portrait-empty class="relative z-10 flex flex-col items-center {{ $intervenant->photo || $intervenant->photoUrl ? 'opacity-0 pointer-events-none absolute' : '' }}">
@@ -42,10 +52,10 @@
                             <span class="text-sm font-semibold text-secondary">Ajouter une photo</span>
                             <span class="text-xs text-on-surface-variant mt-1 px-4">JPG, PNG ou WebP — max 2 Mo</span>
                         </div>
-                        <input type="file" name="photo_file" data-portrait-file id="{{ $randId }}-photo-file" accept="image/jpeg,image/png,image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                        <input type="file" name="photo_file" data-portrait-file id="{{ $randId }}-photo-file" aria-label="Sélectionner une photo de l'intervenant" accept="image/jpeg,image/png,image/webp" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
                     </div>
                     <div class="mt-3">
-                        <label class="form-label">ou URL de la photo</label>
+                        <label for="{{ $randId }}-photo-url" class="form-label">ou URL de la photo</label>
                         <input type="url" name="photo" data-portrait-url id="{{ $randId }}-photo-url" value="{{ old('photo', $intervenant->photo) }}"
                                placeholder="https://..." class="form-input text-xs">
                     </div>
@@ -55,8 +65,8 @@
                 <!-- Champs infos base (2 cols × 3 rows comme prototype) -->
                 <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                     <div>
-                        <label class="form-label">Civilité</label>
-                        <select name="civilite" class="form-input pr-10">
+                        <label for="{{ $randId }}-civilite" class="form-label">Civilité</label>
+                        <select id="{{ $randId }}-civilite" name="civilite" class="form-input pr-10">
                             <option value="">—</option>
                             @foreach(CiviliteEnum::cases() as $c)
                                 <option value="{{ $c->value }}" @selected(old('civilite', optional($intervenant->civilite)->value) === $c->value)>{{ $c->label() }}</option>
@@ -65,28 +75,28 @@
                     </div>
                     <div></div>
                     <div>
-                        <label class="form-label">Nom <span class="req">*</span></label>
-                        <input required type="text" name="nom" value="{{ old('nom', $intervenant->nom) }}" placeholder="Entrez le nom" class="form-input">
+                        <label for="{{ $randId }}-nom" class="form-label">Nom <span class="req">*</span></label>
+                        <input id="{{ $randId }}-nom" required type="text" name="nom" value="{{ old('nom', $intervenant->nom) }}" placeholder="Entrez le nom" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Prénom <span class="req">*</span></label>
-                        <input required type="text" name="prenom" value="{{ old('prenom', $intervenant->prenom) }}" placeholder="Entrez le prénom" class="form-input">
+                        <label for="{{ $randId }}-prenom" class="form-label">Prénom <span class="req">*</span></label>
+                        <input id="{{ $randId }}-prenom" required type="text" name="prenom" value="{{ old('prenom', $intervenant->prenom) }}" placeholder="Entrez le prénom" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Fonction / Titre</label>
-                        <input type="text" name="fonction" list="{{ $randId }}-options-fonction" value="{{ old('fonction', $intervenant->fonction) }}" placeholder="Sélectionner ou saisir une fonction" class="form-input">
+                        <label for="{{ $randId }}-fonction" class="form-label">Fonction / Titre</label>
+                        <input id="{{ $randId }}-fonction" type="text" name="fonction" list="{{ $randId }}-options-fonction" value="{{ old('fonction', $intervenant->fonction) }}" placeholder="Sélectionner ou saisir une fonction" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Organisme / Institution</label>
-                        <input type="text" name="organisme" list="{{ $randId }}-options-organisme" value="{{ old('organisme', $intervenant->organisme) }}" placeholder="Sélectionner ou saisir un organisme" class="form-input">
+                        <label for="{{ $randId }}-organisme" class="form-label">Organisme / Institution</label>
+                        <input id="{{ $randId }}-organisme" type="text" name="organisme" list="{{ $randId }}-options-organisme" value="{{ old('organisme', $intervenant->organisme) }}" placeholder="Sélectionner ou saisir un organisme" class="form-input">
                     </div>
                     <div>
                         <label class="form-label">Poste (si interne)</label>
                         <input type="text" name="poste" list="{{ $randId }}-options-poste" value="{{ old('poste', $intervenant->poste) }}" class="form-input">
                     </div>
                     <div>
-                        <label class="form-label">Type d'intervenant</label>
-                        <select name="type" class="form-input pr-10">
+                        <label for="{{ $randId }}-type" class="form-label">Type d'intervenant</label>
+                        <select id="{{ $randId }}-type" name="type" class="form-input pr-10">
                             <option value="">Sélectionnez...</option>
                             @foreach(TypeIntervenantEnum::cases() as $e)
                                 <option value="{{ $e->value }}" @selected(old('type', optional($intervenant->type)->value) === $e->value)>{{ $e->label() }}</option>
@@ -273,7 +283,7 @@
                         <span class="material-symbols-outlined text-[16px]">restart_alt</span>
                         Réinitialiser
                     </button>
-                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] bg-primary-container text-white rounded-lg shadow-sm hover:bg-secondary transition-colors font-semibold text-sm">
+                    <button type="submit" class="ui-action ui-action--primary">
                         <span class="material-symbols-outlined text-[18px]">
                             {{ $isEdit ? 'save' : 'person_add' }}
                         </span>
