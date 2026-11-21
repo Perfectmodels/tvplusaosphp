@@ -384,9 +384,13 @@
     </section>
 
     {{-- =========== MODALE CRÉATION / ÉDITION SÉQUENCE =========== --}}
-    <div x-show="modaleSequenceVisible"
+    <div x-show="modaleSequenceVisible" x-cloak x-ref="sequenceDialog" tabindex="-1"
          x-transition.opacity.duration.200ms
-         role="dialog" aria-modal="true" aria-labelledby="chef-sequence-modal-title" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+         role="dialog" aria-modal="true" aria-labelledby="chef-sequence-modal-title"
+         :aria-describedby="modaleErreur ? 'chef-sequence-modal-error' : null"
+         class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 focus:outline-none"
+         @keydown.tab="bloquerTabModale($event)"
+         @keydown.escape.stop.prevent="fermerToutesModales()"
          @click.self="fermerToutesModales()"
          style="display:none;">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[94dvh] overflow-y-auto"
@@ -400,8 +404,9 @@
             </div>
 
             <div x-show="modaleChargement" x-cloak role="status" class="p-5 text-sm text-on-surface-variant"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Chargement de la séquence…</div>
-            <div x-show="modaleErreur" x-cloak role="alert" class="mx-5 mt-4 rounded-lg border border-error/30 bg-error/5 p-3 text-sm text-error" x-text="modaleErreur"></div>
+            <div id="chef-sequence-modal-error" x-show="modaleErreur" x-cloak role="alert" class="mx-5 mt-4 rounded-lg border border-error/30 bg-error/5 p-3 text-sm text-error" x-text="modaleErreur"></div>
             <form x-show="!modaleChargement" @submit.prevent="soumettreModaleSequence()"
+                  :aria-busy="envoiEnCours ? 'true' : 'false'"
                   @input="modaleErreur = ''"
                   method="POST"
                   class="p-5 grid grid-cols-1 gap-4 md:grid-cols-2">
