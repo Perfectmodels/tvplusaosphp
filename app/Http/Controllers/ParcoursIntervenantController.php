@@ -429,6 +429,7 @@ class ParcoursIntervenantController extends Controller
     public function affecterSequence(Request $request, ParcoursIntervenant $parcours, ParcoursIntervenantService $service): JsonResponse
     {
         Gate::authorize('assignSequence', $parcours);
+        abort_unless($parcours->confirme_at !== null, 422, 'L’invitation doit être confirmée avant l’affectation.');
 
         $data = $request->validate([
             'sequence_id' => ['required', 'integer', 'exists:sequences,id'],
@@ -455,6 +456,7 @@ class ParcoursIntervenantController extends Controller
 
         $parcours = DB::transaction(function () use ($parcours, $sequence, $conducteur, $service, $request): ParcoursIntervenant {
             $current = ParcoursIntervenant::query()->lockForUpdate()->findOrFail($parcours->id);
+            abort_unless($current->confirme_at !== null, 422, 'L’invitation doit être confirmée avant l’affectation.');
             abort_unless((int) $current->conducteur_id === (int) $conducteur->id, 409, 'Le conducteur a changé. Rechargez le parcours.');
             abort_if($current->sequence_intervenant_id !== null
                 && (int) $current->sequence_id !== (int) $sequence->id,
