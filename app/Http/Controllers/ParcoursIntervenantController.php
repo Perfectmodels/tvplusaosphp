@@ -713,7 +713,7 @@ class ParcoursIntervenantController extends Controller
             'statut_affectation' => $p->sequence_intervenant_id
                 ? 'affecte_sequence'
                 : ($p->conducteur_id ? 'conducteur_sans_sequence' : 'en_attente_conducteur'),
-            'can_affecter' => auth()->user()?->can('assignSequence', $p) ?? false,
+            'can_affecter' => $p->confirme_at !== null && (auth()->user()?->can('assignSequence', $p) ?? false),
             'sequences_disponibles' => $p->conducteur_id && (auth()->user()?->can('assignSequence', $p) ?? false)
                 ? $p->conducteur?->sequences()->get(['id', 'position', 'title'])
                     ->map(fn ($s) => [
