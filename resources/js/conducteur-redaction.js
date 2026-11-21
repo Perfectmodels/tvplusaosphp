@@ -268,8 +268,8 @@ export default function conducteurRedaction() {
             }
             if (!Number.isInteger(minutes) || minutes < 0 || minutes > 600
                 || !Number.isInteger(seconds) || seconds < 0 || seconds > 59
-                || minutes * 60 + seconds < 1) {
-                this.modaleErreur = 'Indiquez une durée positive (0 à 600 minutes et 0 à 59 secondes).';
+                || minutes * 60 + seconds < 1 || minutes * 60 + seconds > 36000) {
+                this.modaleErreur = 'La durée doit être comprise entre 1 seconde et 600 minutes.';
                 return;
             }
             if (!this.modeEdition && (!Number.isInteger(+this.formSeq.position)
