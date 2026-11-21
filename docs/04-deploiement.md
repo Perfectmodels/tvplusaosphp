@@ -12,8 +12,8 @@ La production `https://tvplusaos.com` est hébergée chez LWS en mutualisé. Les
 Toute modification doit être :
 
 1. appliquée dans le dépôt local `archive/conducteurApp` ;
-2. envoyée via FTP ;
-3. **re-téléchargée et comparée octet par octet** (`diff`) avec la copie locale ;
+2. poussée sur `origin` (`Perfectmodels/tvplusaosphp`) — le workflow GitHub Actions déclenche alors le déploiement FTP ;
+3. **re-téléchargée et comparée octet par octet** (`cmp`) avec la copie locale par le workflow ;
 4. vérifiée en HTTP (statut, contenu, absence de stack trace).
 
 ## 2. Fichiers `.htaccess` (racine web)
@@ -68,6 +68,72 @@ php artisan test --compact
 
 # 4. Upload FTP (binaire)
 # 5. Re-téléchargement + diff
+```
+
+## 3 bis. Déploiement automatique (GitHub Actions)
+
+Le dépôt `Perfectmodels/tvplusaosphp` contient le workflow
+`.github/workflows/deploy.yml`. Il s'exécute :
+
+- **automatiquement** à chaque push sur `main` ;
+- **manuellement** depuis l'onglet *Actions* → *Déploiement production* →
+  *Run workflow* (cocher `avec_vendor` pour réexpédier tout `vendor/`, ce qui
+  est inutile sauf changement de dépendances).
+
+### Secrets requis
+
+Dans *Settings → Secrets and variables → Actions*, créer :
+
+| Secret | Rôle |
+|---|---|
+| `FTP_SERVER` | hôte FTPS, par exemple `ftp.tvplusaos.com` |
+| `FTP_USERNAME` | compte FTP LWS |
+| `FTP_PASSWORD` | mot de passe FTP LWS |
+
+Les secrets ne sont jamais écrits dans le dépôt ni affichés dans les logs.
+Pour les définir en ligne de commande sans laisser le mot de passe dans
+l'historique :
+
+```bash
+read -rs FTP_PASSWORD
+printf '%s' "$FTP_PASSWORD" | gh secret set FTP_PASSWORD -R Perfectmodels/tvplusaosphp
+```
+
+### Déroulé
+
+1. PHP 8.3 + `composer install --no-dev` (uniquement si `composer.json` ou
+   `composer.lock` change) ;
+2. Node 22 + `npm ci` + `npm run build` (assets Vite dans `public/build/`) ;
+3. préparation d'une livraison propre : `.env`, `storage/`, `tests/`,
+   `node_modules/`, bases SQLite et `bootstrap/cache/` exclus ;
+4. envoi FTPS dans `/conducteurApp/` (le serveur garde son `.env`, son
+   `storage/` et son `vendor/` existant) ;
+5. re-téléchargement de trois fichiers témoins et comparaison octet par octet
+   (`cmp`) ;
+6. contrôle HTTP de `https://tvplusaos.com/`, de `/up` et du manifeste Vite.
+
+Le miroir `config/` est envoyé avec `--delete` pour éviter qu'un fichier de
+configuration supprimé du dépôt reste actif sur le serveur. Les autres
+répertoires ne sont jamais supprimés à distance : un fichier retiré du dépôt
+reste sur le serveur (sans effet s'il n'est plus référencé).
+
+### Limites
+
+- **Migrations** : le workflow ne peut pas lancer `php artisan migrate`
+  (aucun SSH). Un avertissement GitHub est affiché si
+  `database/migrations/` change ; appliquez la migration via phpMyAdmin avant
+  ou juste après la mise en ligne.
+- Pas de `config:cache` / `route:cache` sur le serveur : les fichiers
+  `bootstrap/cache/config.php` et `routes-*.php` ne doivent pas exister.
+- Un push reste la source de vérité : ne modifiez pas directement les fichiers
+  PHP sur le serveur, ils seraient écrasés au déploiement suivant.
+
+### Suivi
+
+```bash
+gh run list --workflow=deploy.yml --limit 5
+gh run watch
+gh run view --log-failed
 ```
 
 ## 4. Base de données

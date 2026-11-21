@@ -1,0 +1,254 @@
+name: Déploiement production
+
+# Chaque push sur main met le site en ligne. Le lancement manuel permet de
+# forcer un déploiement complet (utile après un changement de dépendances).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      avec_vendor:
+        description: "Réexpédier tout vendor/ (long ; après un changement de dépendances)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploiement-production
+  cancel-in-progress: false
+
+env:
+  APP_ENV: production
+  APP_DEBUG: "false"
+  # Clé factice : uniquement destinée à `artisan package:discover` pendant le
+  # build. La clé réelle reste dans le .env du serveur.
+  APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+  DB_CONNECTION: sqlite
+  DB_DATABASE: ":memory:"
+  CACHE_STORE: array
+  SESSION_DRIVER: array
+  QUEUE_CONNECTION: sync
+  LOG_CHANNEL: stderr
+
+jobs:
+  build:
+    name: Compilation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Détecter les changements de dépendances PHP
+        id: deps
+        shell: bash
+        run: |
+          set -euo pipefail
+          before='${{ github.event.before }}'
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ]; then
+            if [ '${{ github.event.inputs.avec_vendor }}' = 'true' ]; then
+              echo "vendor=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "vendor=false" >> "$GITHUB_OUTPUT"
+            fi
+          elif [ -z "$before" ] \
+             || [ "$before" = '0000000000000000000000000000000000000000' ]; then
+            echo "vendor=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$before" '${{ github.sha }}' -- composer.json composer.lock; then
+            echo "vendor=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "vendor=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Installer PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, intl, gd, zip, pdo_mysql, pdo_sqlite, bcmath, exif, fileinfo, curl, dom, xml
+          coverage: none
+          tools: composer:v2
+
+      - name: Mettre en cache Composer
+        if: steps.deps.outputs.vendor == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Installer les dépendances PHP
+        if: steps.deps.outputs.vendor == 'true'
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Installer les dépendances JS
+        run: npm ci
+
+      - name: Compiler les assets
+        run: npm run build
+
+      - name: Préparer la livraison
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+
+          rsync -a app config database lang public resources routes docs dist/
+          rsync -a --exclude='cache/' bootstrap/ dist/bootstrap/
+          cp artisan composer.json composer.lock dist/
+
+          # Le serveur conserve son propre .env, son storage et son cache.
+          rm -f dist/database/*.sqlite dist/database/*.sqlite3 dist/public/hot
+          rm -rf dist/public/storage
+          find dist -name '.DS_Store' -delete
+
+          if [ '${{ steps.deps.outputs.vendor }}' = 'true' ]; then
+            rsync -a vendor/ dist/vendor/
+          fi
+
+          test -f dist/artisan
+          test -f dist/bootstrap/app.php
+          test -f dist/public/build/manifest.json
+          du -sh dist
+
+      - name: Signaler une migration non appliquée
+        shell: bash
+        run: |
+          before='${{ github.event.before }}'
+          if [ -n "$before" ] \
+             && [ "$before" != '0000000000000000000000000000000000000000' ] \
+             && ! git diff --quiet "$before" '${{ github.sha }}' -- database/migrations; then
+            echo "::warning::Des migrations ont changé. Le déploiement FTP ne les exécute pas : appliquez-les via phpMyAdmin avant ou juste après la mise en ligne."
+          fi
+
+      - name: Archiver la livraison
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: dist
+          if-no-files-found: error
+          retention-days: 3
+
+  deploy:
+    name: Mise en ligne FTPS
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Récupérer la livraison
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: dist
+
+      - name: Contrôler la livraison
+        run: |
+          set -euo pipefail
+          test -f dist/artisan
+          test -f dist/bootstrap/app.php
+          test -f dist/public/build/manifest.json
+
+      - name: Installer lftp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+
+      - name: Envoyer sur le serveur (FTPS)
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${FTP_SERVER:?Secret FTP_SERVER manquant}"
+          : "${FTP_USERNAME:?Secret FTP_USERNAME manquant}"
+          : "${FTP_PASSWORD:?Secret FTP_PASSWORD manquant}"
+
+          cat > deploy.lftp <<EOF
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate yes
+          set ssl:check-hostname no
+          set ftp:passive-mode true
+          set net:timeout 30
+          set net:max-retries 3
+          set net:reconnect-interval-base 5
+          set mirror:parallel-transfer-count 3
+          open -u "$FTP_USERNAME", ftp://$FTP_SERVER
+          mirror -R --verbose=1 --exclude-glob .env --exclude-glob .git/ --exclude-glob storage/ --exclude-glob bootstrap/cache/ --exclude-glob public/storage ./dist/ /conducteurApp/
+          mirror -R --delete --verbose=1 ./dist/config/ /conducteurApp/config/
+          bye
+          EOF
+
+          export LFTP_PASSWORD="$FTP_PASSWORD"
+          lftp -f deploy.lftp
+          rm -f deploy.lftp
+
+      - name: Vérifier l'intégrité des fichiers envoyés
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verify
+
+          cat > verify.lftp <<EOF
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate yes
+          set ssl:check-hostname no
+          set ftp:passive-mode true
+          set net:timeout 30
+          set net:max-retries 3
+          open -u "$FTP_USERNAME", ftp://$FTP_SERVER
+          get /conducteurApp/app/Http/Controllers/Controller.php -o verify/Controller.php
+          get /conducteurApp/resources/views/layouts/guest.blade.php -o verify/guest.blade.php
+          get /conducteurApp/public/build/manifest.json -o verify/manifest.json
+          bye
+          EOF
+
+          export LFTP_PASSWORD="$FTP_PASSWORD"
+          lftp -f verify.lftp
+
+          cmp verify/Controller.php dist/app/Http/Controllers/Controller.php
+          cmp verify/guest.blade.php dist/resources/views/layouts/guest.blade.php
+          cmp verify/manifest.json dist/public/build/manifest.json
+          echo "Fichiers vérifiés octet par octet."
+
+      - name: Vérifier la production
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          code=''
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "https://tvplusaos.com/?deploy=${GITHUB_SHA}" || true)
+            [ "$code" = '200' ] && break
+            sleep 5
+          done
+          echo "Accueil : HTTP $code"
+          test "$code" = '200'
+
+          up=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "https://tvplusaos.com/up" || true)
+          echo "Santé : HTTP $up"
+          test "$up" = '200'
+
+          curl -fsS --max-time 20 "https://tvplusaos.com/build/manifest.json?cb=${GITHUB_SHA}" -o verify/remote-manifest.json
+          cmp verify/remote-manifest.json dist/public/build/manifest.json
+          echo "Manifeste Vite servi par la production identique au build."
