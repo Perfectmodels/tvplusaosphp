@@ -704,13 +704,11 @@ export default function conducteurPresentateur() {
         },
 
         _timeToSec(hms) {
-            if (!hms) return 0;
-            const parts = String(hms).split(':');
-            let h = 0, m = 0, s = 0;
-            if (parts.length === 3) { [h, m, s] = parts.map(v => parseInt(v, 10) || 0); }
-            else if (parts.length === 2) { [m, s] = parts.map(v => parseInt(v, 10) || 0); }
-            else { m = parseInt(parts[0], 10) || 0; }
-            return Math.max(0, h * 3600 + m * 60 + s);
+            const parts = String(hms ?? '').split(':').map(Number);
+            if ((parts.length !== 2 && parts.length !== 3) || parts.some(n => !Number.isInteger(n))
+                || parts[0] < 0 || parts[0] > 23 || parts[1] < 0 || parts[1] > 59
+                || (parts.length === 3 && (parts[2] < 0 || parts[2] > 59))) return NaN;
+            return parts[0] * 3600 + parts[1] * 60 + (parts[2] ?? 0);
         },
 
         _secToHM(sec) {
@@ -728,7 +726,11 @@ export default function conducteurPresentateur() {
             const end   = this.seqForm?.heure_fin;
             let sSec = this._timeToSec(start);
             let eSec = this._timeToSec(end);
-            if (eSec < sSec) eSec += 86400; // minuit suivant
+            if (!Number.isFinite(sSec) || !Number.isFinite(eSec)) {
+                this.dureeSeqFormHM = '--:--';
+                return 0;
+            }
+            if (eSec < sSec) eSec += 86400; // passage à minuit
             const diff = Math.max(0, eSec - sSec);
             this.dureeSeqFormHM = this._secToHM(diff);
             return diff;
@@ -768,6 +770,7 @@ export default function conducteurPresentateur() {
                 return;
             }
             this._resetSeqForm('create');
+            this._modalInitialForm = JSON.stringify(this.seqForm);
             this.showModal = true;
         },
 
@@ -790,27 +793,39 @@ export default function conducteurPresentateur() {
                 intervenant_ids: Array.isArray(seq.intervenant_ids) ? seq.intervenant_ids.slice() : [],
             };
             this.calculDureeSeqForm();
+            this._modalInitialForm = JSON.stringify(this.seqForm);
             this.showModal = true;
         },
 
-        closeModal() {
+        closeModal(force = false) {
+            if (this.isSavingSeq && !force) return;
+            if (!force && this._modalInitialForm
+                && JSON.stringify(this.seqForm) !== this._modalInitialForm
+                && !window.confirm('Abandonner les modifications non enregistrées ?')) return;
             this.showModal = false;
-            setTimeout(() => { this.editingId = null; this.isSavingSeq = false; this.modalErrors = []; }, 250);
+            this._modalInitialForm = null;
+            setTimeout(() => { this.editingId = null; this.modalErrors = []; }, 250);
         },
 
         _validateSeqForm() {
             const errs = [];
             const f = this.seqForm || {};
             if (! (Number.isFinite(+f.position) && +f.position >= 1)) errs.push('Ordre invalide.');
-            if (! /^\d{1,2}:\d{2}(:\d{2})?$/.test(String(f.heure_debut || ''))) errs.push('Heure début invalide.');
-            if (! /^\d{1,2}:\d{2}(:\d{2})?$/.test(String(f.heure_fin   || ''))) errs.push('Heure fin invalide.');
             const debSec = this._timeToSec(f.heure_debut);
-            let   finSec = this._timeToSec(f.heure_fin);
-            if (finSec <= debSec && !String(f.heure_fin).includes(':00')) errs.push('Heure fin doit être supérieure à l\'heure début.');
+            const finSec = this._timeToSec(f.heure_fin);
+            if (!Number.isFinite(debSec)) errs.push('Heure de début invalide (HH:MM).');
+            if (!Number.isFinite(finSec)) errs.push('Heure de fin invalide (HH:MM).');
+            if (Number.isFinite(debSec) && Number.isFinite(finSec) && debSec === finSec) {
+                errs.push('Les heures de début et de fin doivent être différentes.');
+            }
             if (! f.type || String(f.type).trim() === '') errs.push('Type est requis.');
             if (! f.title || String(f.title).trim().length < 2) errs.push('Titre / sujet est requis (min 2 caractères).');
             if (String(f.title || '').length > 255) errs.push('Titre trop long (255 max).');
             if (String(f.summary || '').length > 5000) errs.push('Résumé trop long (5 000 max).');
+            if (['DEBAT', 'DÉBAT'].includes(String(f.type || '').toUpperCase())) {
+                const n = (f.intervenant_ids || []).length;
+                if (n < 2 || n > 4) errs.push('Un débat exige entre 2 et 4 intervenants.');
+            }
             this.modalErrors = errs;
             return errs.length === 0;
         },
@@ -886,7 +901,7 @@ export default function conducteurPresentateur() {
                     return;
                 }
                 if (!resp.ok || !json || !json.ok) {
-                    const msgs = json?.errors && Array.isArray(json.errors) ? json.errors : (json?.message ? [json.message] : ['Erreur serveur.']);
+                    const msgs = json?.errors ? (Array.isArray(json.errors) ? json.errors : Object.values(json.errors).flat()) : (json?.message ? [json.message] : ['Erreur serveur.']);
                     this.modalErrors = msgs;
                     this.toast(msgs[0], 'error');
                     return;
@@ -894,7 +909,7 @@ export default function conducteurPresentateur() {
                 const nouvelle = json.sequence;
                 this._upsertLocalSequence(nouvelle, mode);
                 this.toast(json?.message || (mode === 'store' ? '✅ Séquence créée.' : '✅ Séquence modifiée.'), 'success');
-                this.closeModal();
+                this.closeModal(true);
                 this.$nextTick(() => this.calculDureeSeqForm());
             } catch (e) {
                 this.modalErrors = ['Erreur réseau.'];
@@ -974,7 +989,7 @@ export default function conducteurPresentateur() {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': this.csrf,
+                        'X-CSRF-TOKEN': this.csrfToken,
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
                     },
