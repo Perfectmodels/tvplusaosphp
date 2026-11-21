@@ -24,6 +24,7 @@
         conducteurId: {{ $conducteur->id }},
         csrfToken: @json(csrf_token()),
         canCrudRedac: @json($canCrudRedac),
+        canReorderRedac: @json($canReorder),
         defaultNextPos: {{ $defaultNextPos }},
         typeOptions: @json($typeOptions),
         jrOptions: @json($jrOptions),
@@ -49,8 +50,8 @@
 
     @include('_partials.conducteur-lifecycle', ['conducteur' => $conducteur])
 
-    {{-- HEADER STATS BAR (progression + 3 stats) --}}
-    <header class="bg-white border-b border-outline/10 px-5 py-5 shadow-sm">
+    {{-- Navigation et indicateurs de la rédaction --}}
+    <header class="rounded-2xl border border-outline-variant bg-white px-4 py-5 shadow-sm sm:px-6">
         <div class="max-w-[1800px] mx-auto flex flex-col gap-5">
             <div class="flex flex-wrap justify-between items-start gap-4">
                 <div>
@@ -70,28 +71,21 @@
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <a href="{{ route('conducteurs.redaction.index') }}"
-                       class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-outline/30 rounded-lg hover:bg-surface-container transition-colors text-on-surface">
-                        <i class="fa-solid fa-arrow-left text-xs"></i> Tous conducteurs
+                       class="ui-action ui-action--outline">
+                        <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i> Conducteurs de rédaction
                     </a>
-                    <a href="{{ route('conducteurs.chef_edition', $conducteur) }}"
-                       class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-outline/30 rounded-lg hover:bg-surface-container transition-colors text-on-surface">
-                        <i class="fa-solid fa-pen-to-square text-xs"></i> Timeline Chef Édition
-                    </a>
-                    <a href="{{ route('conducteurs.presentateur.show', $conducteur) }}"
-                       class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-outline/30 rounded-lg hover:bg-surface-container transition-colors text-on-surface">
-                        <i class="fa-solid fa-microphone-lines text-xs"></i> Vue Présentateur
-                    </a>
+                    {{-- Les vues Chef d'édition / Présentateur sont réservées aux conducteurs d'émission. --}}
                     <button type="button"
                             @click="document.dispatchEvent(new CustomEvent('presence:reviser'))"
-                            class="inline-flex items-center gap-2 px-3.5 py-2 text-sm border border-primary/30 text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                            class="ui-action ui-action--outline">
                         <i class="fa-solid fa-users text-xs"></i>
                         Présences
                         <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-xs font-bold"
                               x-text="presenceTotal + ' / ' + presenceTotalJournalistes">0</span>
                         <span class="text-xs opacity-70 font-normal">présents · Réviser</span>
                     </button>
-                    <button x-show="canCrudRedac" @click="openCreateSujetModal()"
-                            class="inline-flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-container transition-colors shadow-sm">
+                    <button type="button" x-show="canCrudRedac" @click="openCreateSujetModal()"
+                            class="ui-action ui-action--primary">
                         <i class="fa-solid fa-plus text-xs"></i> Ajouter un sujet
                     </button>
                 </div>
@@ -120,14 +114,63 @@
                         <p class="text-xs uppercase tracking-widest text-secondary">Progression Workflow</p>
                         <p class="font-bold text-blue-700" x-text="progression + '%'">{{ $progression }}%</p>
                     </div>
-                    <div class="h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full bg-blue-600 rounded-full transition-all duration-500"
-                             :style="{ width: progression + '%' }"></div>
+                    <div class="h-2.5 w-full overflow-hidden rounded-full bg-surface-container-high"
+                         role="progressbar" aria-label="Progression globale de la production"
+                         aria-valuemin="0" aria-valuemax="100" :aria-valuenow="Math.max(0, Math.min(100, progression))">
+                        <div class="h-full rounded-full bg-secondary transition-[width] duration-300"
+                             :style="{ width: Math.max(0, Math.min(100, progression)) + '%' }"></div>
                     </div>
                 </div>
             </div>
         </div>
     </header>
+
+    {{-- Recherche, filtres et actualisation, communs aux vues tableau / cartes. --}}
+    <section class="rounded-2xl border border-outline-variant bg-white p-4 shadow-sm sm:p-5"
+             aria-label="Rechercher et filtrer les sujets">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-primary">Programmation et suivi des sujets</h2>
+                <p class="mt-1 text-sm text-on-surface-variant" role="status" aria-live="polite">
+                    <span x-text="sujetsVisibles.length"></span> sujet(s) affiché(s) sur
+                    <span x-text="sujets.length"></span>
+                    <span x-show="erreurSynchronisation" class="ml-2 font-semibold text-error">· Synchronisation indisponible</span>
+                    <span x-show="!erreurSynchronisation && derniereSynchronisation"
+                          class="ml-2" x-text="'· Actualisé à ' + derniereSynchronisation"></span>
+                </p>
+            </div>
+            <button type="button" class="ui-action ui-action--outline"
+                    @click="actualiserSujets()" :disabled="synchronisationEnCours || isSavingSujet || showModal">
+                <i :class="synchronisationEnCours ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate'"
+                   aria-hidden="true"></i> Actualiser
+            </button>
+        </div>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(13rem,17rem)_auto]">
+            <div>
+                <label for="redaction-sujet-recherche" class="mb-1 block text-xs font-semibold text-on-surface-variant">
+                    Sujet, angle, émission, journaliste
+                </label>
+                <input id="redaction-sujet-recherche" type="search" x-model.debounce.250ms="rechercheSujet"
+                       maxlength="160" class="ui-field" autocomplete="off"
+                       placeholder="Rechercher dans le conducteur…">
+            </div>
+            <div>
+                <label for="redaction-sujet-filtre" class="mb-1 block text-xs font-semibold text-on-surface-variant">Filtre rapide</label>
+                <select id="redaction-sujet-filtre" x-model="filtreSujet" class="ui-field">
+                    <option value="tous">Tous les sujets</option>
+                    <option value="attente">Non livrés</option>
+                    <option value="livres">Livrés</option>
+                    <option value="sans_angle">Angles à renseigner</option>
+                    <option value="sans_jri">Sans journaliste assigné</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="button" class="ui-action ui-action--outline w-full sm:w-auto"
+                        @click="effacerFiltresSujets()"
+                        :disabled="!rechercheSujet && filtreSujet === 'tous'">Effacer</button>
+            </div>
+        </div>
+    </section>
 
     {{-- TABLEAU 15 COLONNES (#COND · #SEQ · Ordre · Sujet · Angle · Émission · Type · JRI · Terrain · Montage · Habillage · Livraison · Livré le · Diffusion · Actions) --}}
     <section class="max-w-[1900px] mx-auto w-full pb-8" data-bulk-list="bulk-sujets-redaction">
