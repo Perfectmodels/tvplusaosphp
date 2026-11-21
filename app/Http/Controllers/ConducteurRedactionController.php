@@ -78,6 +78,12 @@ final class ConducteurRedactionController extends Controller
         ]);
     }
 
+    /** État temps réel du conducteur partagé : même contrat que la vue antenne. */
+    public function liveState(Conducteur $conducteur): JsonResponse
+    {
+        return app(ConducteurPresentateurController::class)->liveState($conducteur);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('create', Conducteur::class);
