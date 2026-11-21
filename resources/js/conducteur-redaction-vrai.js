@@ -168,7 +168,7 @@ export default function conducteurRedactionVrai() {
                         this._liveRefreshTimer = setTimeout(() => this.refreshLiveState(), 300);
                     });
             }
-        }
+        },
         filteredEmissionOptions() {
             const query = String(this.emissionSearch || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr');
             return this.emissionOptions.filter((emission) => {
