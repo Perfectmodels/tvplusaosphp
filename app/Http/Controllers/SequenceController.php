@@ -262,8 +262,12 @@ final class SequenceController extends Controller
             abort(400);
         }
 
-        Gate::authorize('view', $sequence);
         Gate::authorize('view', $sequence->conducteur);
+        if (! Gate::allows('view', $sequence)
+            && ! Gate::allows('crudSequencePresentateur', $sequence)
+            && ! Gate::allows('crudSequenceRedaction', $sequence)) {
+            Gate::authorize('view', $sequence);
+        }
 
         // Trié par position du pivot (orderByPivot) — le 1ᵉʳ est l'invité principal
         $intervenants = $sequence->intervenants;
