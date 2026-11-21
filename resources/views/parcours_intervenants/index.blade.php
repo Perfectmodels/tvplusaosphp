@@ -496,6 +496,20 @@ $kpiCartes = [
 
                 {{-- Bandeau d'état --}}
                 <div id="parcours-bandeau" class="flex flex-wrap items-center gap-2"></div>
+                <div id="parcours-affecter" class="hidden rounded-xl border border-outline/20 bg-surface-container-low/50 p-4">
+                    <label for="parcours-select-sequence" class="mb-2 block text-sm font-semibold text-on-surface">
+                        Affecter cet invité à une séquence
+                    </label>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <select id="parcours-select-sequence"
+                                class="min-w-0 flex-1 rounded-lg border border-outline/30 bg-white px-3 py-2 text-sm"></select>
+                        <button id="parcours-btn-affecter" type="button"
+                                class="min-h-10 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:opacity-90">
+                            Valider l'affectation
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-on-surface-variant">Seules les séquences de cette émission et de cette édition sont proposées.</p>
+                </div>
 
                 {{-- ⛔ Règle « scan obligatoire » --}}
                 <div class="rounded-xl border border-sky-200 bg-sky-50/60 p-4 flex items-start gap-3">
@@ -772,7 +786,7 @@ $kpiCartes = [
     const elBandeau= document.getElementById('parcours-bandeau');
     const elNotes  = document.getElementById('parcours-notes');
 
-    let urls = { etat: '', etape: '', retard: '', noshow: '' };
+    let urls = { etat: '', etape: '', retard: '', noshow: '', assign: '' };
     const SCAN_URL = "{{ route('scanner-qr.index') }}";
     let etat = null;
     let busy = false;
@@ -827,6 +841,15 @@ $kpiCartes = [
         }
         document.getElementById('parcours-btn-retard')?.classList.toggle('hidden', !etat.can_retard);
         document.getElementById('parcours-btn-noshow')?.classList.toggle('hidden', !etat.can_no_show);
+        const assignBox = document.getElementById('parcours-affecter');
+        const selectSequence = document.getElementById('parcours-select-sequence');
+        const sequenceOptions = Array.isArray(etat.sequences_disponibles) ? etat.sequences_disponibles : [];
+        const canAssign = !!etat.can_affecter && etat.statut_affectation === 'conducteur_sans_sequence' && sequenceOptions.length > 0;
+        assignBox.classList.toggle('hidden', !canAssign);
+        if (canAssign) {
+            // Text-only option creation: no HTML injection from sequence titles.
+            selectSequence.replaceChildren(...sequenceOptions.map(s => new Option(s.label, String(s.id))));
+        }
         // ⛔ Scan obligatoire : l'étape courante est studio mais l'invité n'a
         //    pas encore été scanné à l'accueil.
         const scanRequis = (etat.etapes || []).some(function (e) {
@@ -1101,6 +1124,7 @@ $kpiCartes = [
                 etape:  btn.dataset.parcoursUrl,
                 retard: btn.dataset.parcoursRetard,
                 noshow: btn.dataset.parcoursNoshow,
+                assign: '/parcours-intervenants/' + btn.dataset.parcoursId + '/affecter-sequence',
             };
             etat = null;
             elSteps.innerHTML = '<li class="text-center text-on-surface-variant text-sm py-6">Chargement…</li>';
@@ -1117,6 +1141,12 @@ $kpiCartes = [
         const etapeBtn = e.target.closest('.js-etape-btn');
         if (etapeBtn) {
             poster(urls.etape, { etape: etapeBtn.dataset.etape });
+            return;
+        }
+
+        if (e.target.closest('#parcours-btn-affecter')) {
+            const sequenceId = Number(document.getElementById('parcours-select-sequence')?.value || 0);
+            if (sequenceId) poster(urls.assign, { sequence_id: sequenceId });
             return;
         }
 

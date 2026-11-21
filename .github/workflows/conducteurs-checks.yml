@@ -32,6 +32,8 @@ on:
       - "resources/views/sondage/create.blade.php"
       - "resources/views/_partials/conducteur-sondage.blade.php"
       - "routes/module_autres.php"
+      - "routes/module_rh.php"
+      - "routes/console.php"
       - ".github/workflows/conducteurs-checks.yml"
   workflow_dispatch:
 
