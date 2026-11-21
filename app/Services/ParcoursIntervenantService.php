@@ -28,35 +28,50 @@ class ParcoursIntervenantService
     {
         $place = false;
 
-        // 1. Retrouver le conducteur de l'émission pour la date de passage
-        if (! $parcours->conducteur_id && $parcours->emission_id) {
-            $date = $parcours->heure_passage_prevue?->toDateString()
-                ?? $parcours->invitation_envoyee_at?->toDateString();
+        // 1. Une invitation est liée uniquement au conducteur de son émission
+        // et de sa DATE de passage. Ne jamais choisir une ancienne édition.
+        if ($parcours->emission_id) {
+            $date = $parcours->heure_passage_prevue?->toDateString();
+            if ($date !== null) {
+                $conducteurActuel = $parcours->conducteur_id
+                    ? Conducteur::query()->find($parcours->conducteur_id)
+                    : null;
+                if ($conducteurActuel && (
+                    (int) $conducteurActuel->emission_id !== (int) $parcours->emission_id
+                    || $conducteurActuel->date_edition?->toDateString() !== $date
+                    || (string) $conducteurActuel->type !== 'emission'
+                )) {
+                    // Corriger une association ancienne invalide, sans choisir de repli.
+                    $parcours->conducteur_id = null;
+                    $parcours->sequence_id = null;
+                    $parcours->sequence_intervenant_id = null;
+                    $place = true;
+                }
 
-            $conducteur = Conducteur::query()
-                ->where('emission_id', $parcours->emission_id)
-                ->when($date, static fn ($q) => $q->whereDate('date_edition', $date))
-                ->orderByDesc('date_edition')
-                ->orderByDesc('id')
-                ->first();
-
-            // Repli : dernier conducteur connu de cette émission
-            if (! $conducteur) {
-                $conducteur = Conducteur::query()
-                    ->where('emission_id', $parcours->emission_id)
-                    ->orderByDesc('date_edition')
-                    ->orderByDesc('id')
-                    ->first();
-            }
-
-            if ($conducteur) {
-                $parcours->conducteur_id = $conducteur->id;
-                $place = true;
+                if (! $parcours->conducteur_id) {
+                    $conducteur = Conducteur::query()
+                        ->where('emission_id', $parcours->emission_id)
+                        ->where('type', 'emission')
+                        ->whereDate('date_edition', $date)
+                        ->orderByDesc('id')
+                        ->first();
+                    if ($conducteur) {
+                        $parcours->conducteur_id = $conducteur->id;
+                        $place = true;
+                    }
+                }
             }
         }
 
-        // 2. Si une séquence est déjà rattachée, créer le pivot (source de vérité conducteur)
-        if ($parcours->sequence_id && ! $parcours->sequence_intervenant_id) {
+        // 2. L'affectation à une séquence est une étape distincte. Ne créer
+        // le pivot que si la séquence appartient bien au conducteur prévu.
+        if ($parcours->sequence_id && ! $parcours->sequence_intervenant_id
+            && (! $parcours->emission_id || $parcours->conducteur_id)
+            && (! $parcours->conducteur_id
+                || \App\Models\Sequence::query()
+                    ->whereKey($parcours->sequence_id)
+                    ->where('conducteur_id', $parcours->conducteur_id)
+                    ->exists())) {
             $pivot = SequenceIntervenantPivot::firstOrCreate(
                 [
                     'sequence_id' => $parcours->sequence_id,
