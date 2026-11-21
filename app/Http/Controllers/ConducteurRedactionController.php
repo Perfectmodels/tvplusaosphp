@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 final class ConducteurRedactionController extends Controller
@@ -150,21 +151,21 @@ final class ConducteurRedactionController extends Controller
 
         $valid = $request->validate([
             'ordered_ids' => ['required', 'array', 'min:1'],
-            'ordered_ids.*' => ['integer', 'exists:sequences,id'],
+            'ordered_ids.*' => ['required', 'integer', 'distinct', 'exists:sequences,id'],
         ]);
-
-        $position = 1;
-        foreach ($valid['ordered_ids'] as $id) {
-            $seq = $conducteur->sequencesAvecMasques()->find((int) $id);
-            if (! $seq) {
-                continue;
-            }
-            $seq->timestamps = false;
-            $seq->updateQuietly(['position' => $position]);
-            $position++;
+        $orderedIds = array_values(array_map('intval', $valid['ordered_ids']));
+        $allIds = $conducteur->sequencesAvecMasques()->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        if (collect($orderedIds)->sort()->values()->all() !== $allIds) {
+            return response()->json(['ok' => false, 'message' => 'Toutes les séquences du conducteur doivent être présentes une seule fois.'], 422);
         }
 
-        ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
+        DB::transaction(function () use ($conducteur, $orderedIds): void {
+            Conducteur::query()->whereKey($conducteur->id)->lockForUpdate()->firstOrFail();
+            foreach ($orderedIds as $position => $id) {
+                $conducteur->sequencesAvecMasques()->whereKey($id)->update(['position' => $position + 1]);
+            }
+            ConducteurCalculatorService::recalculerHeures($conducteur->fresh());
+        });
 
         return response()->json([
             'ok' => true,
