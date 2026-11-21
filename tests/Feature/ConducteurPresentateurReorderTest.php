@@ -95,8 +95,8 @@ class ConducteurPresentateurReorderTest extends TestCase
             'Le panneau notes/chrono doit apparaître avant le tableau.'
         );
         $this->assertStringContainsString('QR code public', $html);
-        $this->assertStringContainsString('max-w-lg', $html);
-        $this->assertStringNotContainsString('max-w-2xl', $html);
+        $this->assertStringContainsString('max-w-4xl', $html);
+        $this->assertStringNotContainsString('max-w-lg', $html);
         $this->assertStringNotContainsString('flex flex-col gap-6 h-full', $html);
         $this->assertStringNotContainsString('data-bulk-all', $html);
         $this->assertStringNotContainsString('data-bulk-bar', $html);
