@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +26,7 @@ class ParcoursIntervenantController extends Controller
     /** 7 KPIs Header capture TV+A OS + filtres + tableau Timeline */
     public function index(Request $request): View
     {
+        Gate::authorize('viewAny', ParcoursIntervenant::class);
         $date = $request->input('date') ? rescue(static fn () => Carbon::parse($request->input('date')), today(), false) : today();
         $search = trim((string) $request->input('q', ''));
         $emissionId = $request->input('emission_id') ? (int) $request->input('emission_id') : null;
@@ -265,6 +267,7 @@ class ParcoursIntervenantController extends Controller
         ]);
 
         $etape = EtapeParcoursIntervenantEnum::from($valid['etape']);
+        Gate::authorize('advance', [$parcours, $etape]);
 
         // ⛔ RÈGLE MÉTIER « SCAN OBLIGATOIRE » : au-delà de la confirmation de
         //    l'invitation, l'arrivée de l'invité est validée UNIQUEMENT par le
@@ -335,6 +338,7 @@ class ParcoursIntervenantController extends Controller
      */
     public function programmer(Request $request, InvitationService $invitationService): JsonResponse
     {
+        Gate::authorize('create', ParcoursIntervenant::class);
         $valid = $request->validate([
             'intervenant_id' => ['required', 'integer', 'exists:intervenants,id'],
             'emission_id' => ['required', 'integer', 'exists:emissions,id'],
@@ -423,6 +427,7 @@ class ParcoursIntervenantController extends Controller
         ParcoursIntervenant $parcours,
         \App\Services\Ai\OpenCodeAssistant $assistant,
     ): JsonResponse {
+        Gate::authorize('sendInvitation', $parcours);
         $intervenant = $parcours->intervenant;
         $emission = $parcours->emission;
         $angles = trim((string) $request->input('angles', ''));
@@ -456,6 +461,7 @@ class ParcoursIntervenantController extends Controller
         ParcoursIntervenant $parcours,
         InvitationService $invitationService,
     ): JsonResponse {
+        Gate::authorize('view', $parcours);
         $intervenant = $parcours->intervenant;
         abort_if(! $intervenant, 404);
 
@@ -480,6 +486,7 @@ class ParcoursIntervenantController extends Controller
         ParcoursIntervenant $parcours,
         InvitationService $invitationService,
     ): RedirectResponse {
+        Gate::authorize('sendInvitation', $parcours);
         $intervenant = $parcours->intervenant;
         abort_if(! $intervenant, 404);
 
@@ -499,6 +506,7 @@ class ParcoursIntervenantController extends Controller
 
     public function regenererQr(ParcoursIntervenant $parcours): RedirectResponse
     {
+        Gate::authorize('sendInvitation', $parcours);
         $this->authorize('qr', $parcours->intervenant);
         $parcours->regenererQrToken();
 
@@ -511,6 +519,7 @@ class ParcoursIntervenantController extends Controller
      */
     public function marquerRetard(Request $request, ParcoursIntervenant $parcours): JsonResponse
     {
+        Gate::authorize('markDelay', $parcours);
         $valid = $request->validate([
             'minutes' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -561,6 +570,7 @@ class ParcoursIntervenantController extends Controller
     /** Marquer l'intervenant comme absent (no-show). */
     public function marquerNoShow(Request $request, ParcoursIntervenant $parcours): JsonResponse
     {
+        Gate::authorize('markNoShow', $parcours);
         $parcours->no_show = true;
         $parcours->notes_logistique = trim(
             ($parcours->notes_logistique ? $parcours->notes_logistique."\n" : '')
@@ -586,6 +596,7 @@ class ParcoursIntervenantController extends Controller
     /** État courant du parcours (JSON) — sert à alimenter le modal de workflow. */
     public function etat(ParcoursIntervenant $parcours): JsonResponse
     {
+        Gate::authorize('view', $parcours);
         return response()->json([
             'ok' => true,
             'parcours' => $this->payload($parcours),
