@@ -48,7 +48,7 @@
                     </div>
                     <div class="card-surface !p-3 text-center min-w-[100px]">
                         <div class="text-xs uppercase text-slate-400 tracking-wider mb-1">Conducteurs</div>
-                        <div class="text-lg font-bold text-primary">{{ $emission->nombreConducteurs }}</div>
+                        <div class="text-lg font-bold text-primary">{{ $conducteursEmission->count() }}</div>
                     </div>
                     <div class="card-surface !p-3 text-center min-w-[100px]">
                         <div class="text-xs uppercase text-slate-400 tracking-wider mb-1">Jours</div>
