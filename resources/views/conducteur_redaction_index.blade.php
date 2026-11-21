@@ -16,16 +16,41 @@
         @endcan
     </div>
     @include('_partials.conducteur-edition-selector')
+    @php
+        $listeConducteurs = $conducteurs->getCollection ? $conducteurs->getCollection() : collect($conducteurs);
+        $sujetsSurPage = $listeConducteurs->sum(fn ($item) => $item->sequences->count());
+        $livresSurPage = $listeConducteurs->sum(fn ($item) => $item->sequences->whereNotNull('livre_at')->count());
+        $progressionMoyenne = $listeConducteurs->count() ? (int) round($listeConducteurs->avg(fn ($item) => $item->progression_percent ?? 0)) : 0;
+    @endphp
+    <div class="mx-auto max-w-[1600px] space-y-5">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Indicateurs des conducteurs de rédaction">
+            <div class="ui-panel border-l-4 border-l-primary p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{{ ($allDates ?? false) ? 'Conducteurs trouvés' : 'Conducteurs de la date' }}</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-primary">{{ ($allDates ?? false) ? $conducteurs->total() : $conducteurs->count() }}</p>
+            </div>
+            <div class="ui-panel border-l-4 border-l-secondary p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Sujets affichés</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-on-surface">{{ $sujetsSurPage }}</p>
+            </div>
+            <div class="ui-panel border-l-4 border-l-success p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Sujets livrés</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-success">{{ $livresSurPage }}</p>
+            </div>
+            <div class="ui-panel border-l-4 border-l-secondary p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Progression moyenne affichée</p>
+                <p class="mt-2 text-2xl font-bold tabular-nums text-on-surface">{{ $progressionMoyenne }} %</p>
+            </div>
+        </div>
 
-    <div class="p-4 md:p-6 max-w-[1400px] mx-auto">
+        <div class="rounded-2xl border border-outline-variant bg-white p-3 sm:p-5">
         @if($conducteurs->contains(fn ($item) => auth()->user()->can('delete', $item)))
     @include('_partials.bulk-delete-toolbar', ['resource' => 'conducteurs-redaction'])
 @endif
 
         @if($conducteurs->count() === 0)
             <x-ui.empty-state icon="fa-newspaper"
-                title="Aucun conducteur de rédaction pour cette date"
-                description="Sélectionnez une autre date pour retrouver les sujets et leur suivi de production.">
+                title="{{ ($allDates ?? false) ? 'Aucun conducteur ne correspond à votre recherche' : 'Aucun conducteur de rédaction pour cette date' }}"
+                description="{{ ($allDates ?? false) ? 'Essayez un autre nom ou réinitialisez les filtres.' : 'Sélectionnez une autre date pour retrouver les sujets et leur suivi de production.' }}">
                 @can('create', \App\Models\Conducteur::class)
                     <x-slot:actions>
                         <a href="{{ $createRedactionUrl }}" class="ui-action ui-action--primary">
@@ -35,7 +60,7 @@
                 @endcan
             </x-ui.empty-state>
         @else
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-bulk-list="bulk-conducteurs-redaction">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3" data-bulk-list="bulk-conducteurs-redaction">
                 @foreach($conducteurs as $c)
                     @continue((string)$c->type !== 'redaction')
                     @php
@@ -46,9 +71,9 @@
                             ? $c->nom
                             : (optional($c->emission)->nom ?? 'Conducteur #'.$c->id);
                     @endphp
-                    <article class="bg-white border border-outline/10 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary/30 transition-all group relative"
+                    <article class="group relative flex h-full flex-col overflow-hidden rounded-xl border border-outline-variant bg-white shadow-sm transition-colors hover:border-secondary/40 focus-within:border-secondary"
                              data-conducteur-id="{{ $c->id }}"
-                             data-conducteur-titre="{{ e($titreConducteur) }}"
+                             data-conducteur-titre="{{ $titreConducteur }}"
                              data-conducteur-date="{{ optional($c->date_edition)->format('d/m/Y') }}"
                              data-conducteur-nb-sujets="{{ $totalSeq }}"
                              data-url-delete="{{ route('conducteurs.redaction.destroy', $c) }}">
@@ -56,9 +81,9 @@
                             @include('_partials.bulk-delete-checkbox', ['resource' => 'conducteurs-redaction', 'record' => $c, 'label' => $titreConducteur])
                             <div class="flex justify-between items-start mb-3 gap-3">
                                 <div class="flex items-center gap-2 min-w-0 flex-wrap">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-primary/20 bg-primary/10 text-primary text-xs font-bold tracking-wider">
-                                        <i class="fa-solid fa-fingerprint text-xs"></i>{{ $c->code_conducteur_affichage }}
-                                    </span>
+                                    <x-ui.status-badge variant="info">
+                                        <i class="fa-solid fa-fingerprint text-xs" aria-hidden="true"></i>{{ $c->code_conducteur_affichage }}
+                                    </x-ui.status-badge>
                                     {!! $c->type_badge_html !!}
                                     {!! $c->statut_badge_html !!}
                                 </div>
@@ -68,7 +93,7 @@
                                     </span>
                                     @can('delete', $c)
                                         <button type="button"
-                                                class="btn-delete-conducteur opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 flex items-center justify-center w-11 h-11 rounded-full bg-error/8 hover:bg-error text-error hover:text-white border border-error/20 hover:border-error shadow-sm"
+                                                class="btn-delete-conducteur inline-flex h-11 w-11 items-center justify-center rounded-lg border border-error/20 text-error transition-colors hover:bg-error hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-error"
                                                 title="Supprimer ce conducteur et tous ses sujets"
                                                 aria-label="Supprimer">
                                             <i class="fa-solid fa-trash text-xs"></i>
@@ -76,7 +101,7 @@
                                     @endcan
                                 </div>
                             </div>
-                            <h3 class="font-bold text-lg text-on-surface line-clamp-1 mb-1">
+                            <h3 class="mb-1 line-clamp-2 min-h-12 text-lg font-bold leading-snug text-on-surface">
                                 {{ $titreConducteur }}
                             </h3>
                             <div class="flex items-center gap-2 text-sm text-on-surface-variant">
@@ -111,9 +136,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="p-4 border-t border-outline/10 flex items-center justify-between">
+                        <div class="mt-auto flex items-center justify-between gap-2 border-t border-outline-variant/60 p-4">
                             <a href="{{ route('conducteurs.redaction.show', $c) }}"
-                               class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg group-hover:bg-primary-container transition-colors text-sm font-medium">
+                               class="ui-action ui-action--primary w-full sm:w-auto">
                                 <i class="fa-solid fa-list-check text-xs"></i> Ouvrir le conducteur
                             </a>
 
@@ -121,12 +146,19 @@
                     </article>
                 @endforeach
             </div>
-            <div class="mt-8">
-                @include('_partials.conducteur-edition-pagination')
+            <div class="mt-6">
+                @if($allDates ?? false)
+                    @include('_partials.conducteur-overview-pagination')
+                @else
+                    @include('_partials.conducteur-edition-pagination')
+                @endif
             </div>
         @endif
+        </div>
     </div>
-@if($conducteurs->isEmpty())<div class="px-4 pb-6">@include('_partials.conducteur-edition-pagination')</div>@endif
+@if($conducteurs->isEmpty() && !($allDates ?? false))
+    <div class="px-4 pb-6">@include('_partials.conducteur-edition-pagination')</div>
+@endif
 @endsection
 
 @push('scripts')
