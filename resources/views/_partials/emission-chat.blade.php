@@ -394,12 +394,18 @@
 
 {{-- Composant unique : bouton lanceur + panneau partagent le même état --}}
 <div x-data="emissionChat(window.__tvChatCfg_{{ $conducteur->id }})"
-     @tv-chat-open.window="open = true">
+     @tv-chat-open.window="open = true"
+     x-init="$watch('open', (isOpen) => $nextTick(() => {
+         if (isOpen) $refs.input?.focus();
+         else $refs.launch?.focus();
+     }))">
 
     {{-- Bouton lanceur (bas à gauche ; l'assistant IA est en bas à droite) --}}
     <button type="button"
             class="tv-chat-launch"
+            x-ref="launch"
             @click="open = !open"
+            aria-controls="tv-chat-panel-{{ $conducteur->id }}"
             aria-haspopup="dialog"
             :aria-expanded="open ? 'true' : 'false'"
             aria-label="Discussion de l'émission">
@@ -410,6 +416,7 @@
 
     {{-- Panneau de discussion --}}
     <div x-show="open"
+         id="tv-chat-panel-{{ $conducteur->id }}"
          x-cloak
          @keydown.escape.window="open = false"
          class="tv-chat-panel"
@@ -427,7 +434,8 @@
             </button>
         </header>
 
-        <div class="tv-chat-list" x-ref="list">
+        <div class="tv-chat-list" x-ref="list" role="log"
+             aria-label="Messages de la discussion interne" aria-live="polite" aria-relevant="additions">
             <template x-if="messages.length === 0 && booted">
                 <div class="tv-chat-empty">
                     <i class="fa-regular fa-comment"></i>
@@ -452,7 +460,7 @@
             </template>
         </div>
 
-        <div x-cloak x-show="error" class="tv-chat-error" x-text="error"></div>
+        <div x-cloak x-show="error" class="tv-chat-error" role="alert" aria-live="assertive" x-text="error"></div>
 
         <div class="tv-chat-foot">
             <input type="text"
