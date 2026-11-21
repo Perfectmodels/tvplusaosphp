@@ -198,7 +198,8 @@ export default function conducteurRedaction() {
         },
 
         async soumettreModaleSequence() {
-            if (!this.formSeq.title || this.envoiEnCours || this.modaleChargement || this.modaleErreur) return;
+            if (!this.formSeq.title || this.envoiEnCours || this.modaleChargement) return;
+            this.modaleErreur = '';
             if (['DEBAT', 'DÉBAT'].includes(String(this.formSeq.type || '').toUpperCase()) && (this.formSeq.intervenant_ids.length < 2 || this.formSeq.intervenant_ids.length > 4)) {
                 this.modaleErreur = 'Un débat exige entre 2 et 4 intervenants.';
                 return;
