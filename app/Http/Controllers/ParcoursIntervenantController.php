@@ -425,6 +425,59 @@ class ParcoursIntervenantController extends Controller
     /**
      * Génère une suggestion de message WhatsApp via l'assistant IA.
      */
+    /** Finalise l'affectation d'un invité confirmé à une séquence du bon conducteur. */
+    public function affecterSequence(Request $request, ParcoursIntervenant $parcours, ParcoursIntervenantService $service): JsonResponse
+    {
+        Gate::authorize('assignSequence', $parcours);
+        abort_unless($parcours->confirme_at !== null, 422, 'L’invitation doit être confirmée avant l’affectation.');
+
+        $data = $request->validate([
+            'sequence_id' => ['required', 'integer', 'exists:sequences,id'],
+        ]);
+
+        $conducteur = $parcours->conducteur;
+        if (! $conducteur
+            || (string) $conducteur->type !== 'emission'
+            || (int) $conducteur->emission_id !== (int) $parcours->emission_id
+            || $conducteur->date_edition?->toDateString() !== $parcours->heure_passage_prevue?->toDateString()) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Aucun conducteur correspondant à cette émission et à cette date. Créez cette édition avant d’affecter une séquence.',
+            ], 422);
+        }
+
+        $sequence = $conducteur->sequences()->whereKey((int) $data['sequence_id'])->first();
+        if (! $sequence) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Séquence absente ou étrangère au conducteur sélectionné.',
+            ], 422);
+        }
+
+        $parcours = DB::transaction(function () use ($parcours, $sequence, $conducteur, $service, $request): ParcoursIntervenant {
+            $current = ParcoursIntervenant::query()->lockForUpdate()->findOrFail($parcours->id);
+            abort_unless($current->confirme_at !== null, 422, 'L’invitation doit être confirmée avant l’affectation.');
+            abort_unless((int) $current->conducteur_id === (int) $conducteur->id, 409, 'Le conducteur a changé. Rechargez le parcours.');
+            abort_if($current->sequence_intervenant_id !== null
+                && (int) $current->sequence_id !== (int) $sequence->id,
+                409,
+                'Cet invité est déjà affecté. Retirez l’affectation précédente avant de changer de séquence.');
+            $current->sequence_id = $sequence->id;
+            $current->save();
+
+            $service->placerDansConducteur($current, $request->user());
+            abort_unless($current->sequence_intervenant_id !== null, 422, 'Affectation de séquence impossible.');
+
+            return $current->fresh();
+        });
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Invité affecté à la séquence du conducteur.',
+            'parcours' => $this->payload($parcours),
+        ]);
+    }
+
     public function suggestMessage(
         Request $request,
         ParcoursIntervenant $parcours,
@@ -660,6 +713,14 @@ class ParcoursIntervenantController extends Controller
             'statut_affectation' => $p->sequence_intervenant_id
                 ? 'affecte_sequence'
                 : ($p->conducteur_id ? 'conducteur_sans_sequence' : 'en_attente_conducteur'),
+            'can_affecter' => $p->confirme_at !== null && (auth()->user()?->can('assignSequence', $p) ?? false),
+            'sequences_disponibles' => $p->conducteur_id && (auth()->user()?->can('assignSequence', $p) ?? false)
+                ? $p->conducteur?->sequences()->get(['id', 'position', 'title'])
+                    ->map(fn ($s) => [
+                        'id' => (int) $s->id,
+                        'label' => '#'.$s->position.' · '.$s->title,
+                    ])->values()->all()
+                : [],
             'etapes' => $etapes,
             'etape_courante' => $courante,
             'etape_courante_label' => collect($etapes)->firstWhere('value', $courante)['label'] ?? 'Terminé',
