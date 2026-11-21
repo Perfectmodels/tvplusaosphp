@@ -69,9 +69,9 @@ class EditorialModuleUiTest extends TestCase
             ->get(route('emissions.show', $emission))
             ->assertOk()->getContent();
 
-        $this->assertStringContainsString(route('conducteurs.emission.create', [
+        $this->assertStringContainsString(e(route('conducteurs.emission.create', [
             'emission_id' => $emission->id, 'date' => today()->toDateString(),
-        ]), $html);
+        ])), $html);
         $this->assertStringContainsString(route('conducteurs.emission.show', $conducteur), $html);
         $this->assertStringContainsString('Ouvrir le conducteur', $html);
         $this->assertStringContainsString('21/11/2026', $html);
