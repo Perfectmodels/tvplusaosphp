@@ -45,7 +45,7 @@
     $pctNouveaux = $totalI > 0 ? round($nouveaux * 100 / $totalI, 1) : 0;
 
     $pageTitle = 'Intervenants';
-    $pageSubtitle = 'Gestion des invités et experts • ' . $intervenants->total() . ' fiches actives';
+    $pageSubtitle = 'Gestion des invités et experts • ' . $intervenants->total() . ' fiches dans le répertoire';
     $showGlobalSearch = false;
     $headerActions = [
         ['label' => 'Scanner QR', 'icon' => 'fa-solid fa-camera', 'href' => route('scanner-qr.index'), 'variant' => 'ghost'],
@@ -130,7 +130,8 @@
     <!-- Quick filters pills -->
     <nav class="mobile-wrap-tabs flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide" aria-label="Filtres rapides des intervenants">
         @php
-            $qsBase = ['q' => $recherche, 'type' => $type, 'dispo' => $dispo];
+            $qsBase = array_filter(request()->only(['q', 'type', 'dispo', 'fonction', 'ville', 'emission_id']),
+                static fn ($value) => $value !== null && $value !== '');
             $qsActive = request()->query();
             $isTous = !($dispo || $filtreRapide);
             $pillClass = static function (bool $active): string {
