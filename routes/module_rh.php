@@ -65,6 +65,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('parcours-intervenants.etat');
     Route::post('/parcours-intervenants/{parcours}/etape', [ParcoursIntervenantController::class, 'avancer'])
         ->name('parcours-intervenants.etape');
+    Route::post('/parcours-intervenants/{parcours}/affecter-sequence', [ParcoursIntervenantController::class, 'affecterSequence'])
+        ->name('parcours-intervenants.sequence.assign');
     Route::post('/parcours-intervenants/{parcours}/retard', [ParcoursIntervenantController::class, 'marquerRetard'])
         ->name('parcours-intervenants.retard');
     Route::post('/parcours-intervenants/{parcours}/no-show', [ParcoursIntervenantController::class, 'marquerNoShow'])
