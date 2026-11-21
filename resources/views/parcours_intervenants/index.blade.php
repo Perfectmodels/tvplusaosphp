@@ -346,6 +346,7 @@ $kpiCartes = [
                                                     <i class="fa-solid fa-qrcode text-xs"></i> Scanner
                                                 </a>
                                             @else
+                                                @can('advance', [$p, \App\Enums\EtapeParcoursIntervenantEnum::from($val)])
                                                 <button type="button"
                                                         class="js-etape-ligne-btn inline-flex items-center gap-1 min-h-[44px] px-3 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-container hover:text-primary transition-colors whitespace-nowrap"
                                                         data-parcours-id="{{ $p->id }}"
@@ -353,6 +354,9 @@ $kpiCartes = [
                                                         data-url="{{ route('parcours-intervenants.etape', $p->id) }}">
                                                     <i class="fa-solid {{ $def['icone'] }} text-xs"></i> {{ $def['bouton'] }}
                                                 </button>
+                                                @else
+                                                    <span class="text-xs font-medium text-on-surface-variant">Réservé au personnel autorisé</span>
+                                                @endcan
                                             @endif
                                         @elseif($estCourant)
                                             <span class="inline-flex items-center gap-1 min-h-[44px] px-3 rounded-lg bg-primary/10 text-primary text-xs font-semibold animate-pulse">
@@ -369,9 +373,13 @@ $kpiCartes = [
                                 {{-- ÉTAT --}}
                                 <td class="px-3 py-3.5 text-center sm:text-left lg:text-center" data-card-wide="true">
                                     {!! $p->badgeStatutActuel !!}
-                                    @if(! $p->sequence_intervenant_id && ! $p->conducteur_id)
+                                    @if(! $p->conducteur_id)
                                         <div class="mt-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 inline-block">
-                                            hors conducteur
+                                            En attente de conducteur pour cette édition
+                                        </div>
+                                    @elseif(! $p->sequence_intervenant_id)
+                                        <div class="mt-1 text-xs font-semibold text-blue-800 bg-blue-50 border border-blue-200 rounded px-1.5 py-0.5 inline-block">
+                                            Conducteur trouvé · séquence à affecter
                                         </div>
                                     @endif
                                 </td>
@@ -380,6 +388,7 @@ $kpiCartes = [
                                 <td class="px-4 py-3.5 text-right" data-card-wide="true">
                                     <div class="flex flex-wrap items-center justify-start lg:justify-end gap-2">
                                         {{-- Envoi WhatsApp : le formulaire cible _blank pour garder l'app ouverte --}}
+                                        @can('sendInvitation', $p)
                                         <form method="POST"
                                               action="{{ route('parcours-intervenants.whatsapp', $p) }}"
                                               target="_blank"
@@ -391,6 +400,7 @@ $kpiCartes = [
                                                 <i class="fa-brands fa-whatsapp text-sm" aria-hidden="true"></i> WhatsApp
                                             </button>
                                         </form>
+                                        @endcan
 
                                         {{-- QR permanent : ouvre la page publique (aperçu + téléchargement) --}}
                                         <a href="{{ route('invitations.show', ['token' => $p->intervenant->tokenInvitation()]) }}"
@@ -810,6 +820,13 @@ $kpiCartes = [
             badges.push('<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">'
                 + '<i class="fa-solid fa-user-slash"></i> Absent (no-show)</span>');
         }
+        if (etat.statut_affectation === 'en_attente_conducteur') {
+            badges.push('<span class="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800">Édition sans conducteur : affectation en attente</span>');
+        } else if (etat.statut_affectation === 'conducteur_sans_sequence') {
+            badges.push('<span class="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-800">Séquence à affecter</span>');
+        }
+        document.getElementById('parcours-btn-retard')?.classList.toggle('hidden', !etat.can_retard);
+        document.getElementById('parcours-btn-noshow')?.classList.toggle('hidden', !etat.can_no_show);
         // ⛔ Scan obligatoire : l'étape courante est studio mais l'invité n'a
         //    pas encore été scanné à l'accueil.
         const scanRequis = (etat.etapes || []).some(function (e) {
@@ -835,12 +852,12 @@ $kpiCartes = [
             if (e.fait) {
                 action = '<span class="text-xs text-emerald-700 font-medium inline-flex items-center gap-1">'
                     + '<i class="fa-solid fa-circle-check"></i> validé</span>';
-            } else if (e.value === etat.etape_courante && e.bloque_scan) {
+            } else if (e.value === etat.etape_courante && e.bloque_scan && etat.can_scanner) {
                 // ⛔ L'arrivée (et les étapes studio tant que le scan n'a pas eu
                 //    lieu) se valide UNIQUEMENT au Scanner QR.
                 action = '<a href="' + SCAN_URL + '" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700 transition-colors">'
                     + '<i class="fa-solid fa-qrcode text-xs"></i> Scanner le QR</a>';
-            } else if (e.value === etat.etape_courante && e.bouton) {
+            } else if (e.value === etat.etape_courante && e.bouton && e.can_valider) {
                 action = '<button type="button" class="js-etape-btn inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-container hover:text-primary transition-colors"'
                     + ' data-etape="' + e.value + '">'
                     + '<i class="fa-solid ' + e.icone + ' text-xs"></i> ' + e.bouton + '</button>';
