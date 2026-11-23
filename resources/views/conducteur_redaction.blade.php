@@ -292,7 +292,7 @@
 
                     <template x-for="(seq, indexSeq) in sequences" :key="seq.id">
                         <tr x-data="{ estActive: false }"
-                            @tv-sequence-active.window="estActive = Number($event.detail.id) === Number(seq.id)"
+                            @tv-sequence-active.window="estActive = $event.detail.running === true && Number($event.detail.id) === Number(seq.id)"
                             class="border-b border-outline-variant transition-colors group"
                             :class="estActive ? 'tv-sequence-active' : (seq.alerte_info ? 'bg-red-50/40 animate-pulse' : 'hover:bg-surface-container-low')"
                             :data-seq-id="seq.id"
