@@ -62,7 +62,7 @@
         @include('_partials.shared-workspace-summary')
 
         <div class="tvos-admin-charts">
-            <section class="ed-card tvos-admin-panel tvos-admin-panel--wide" aria-labelledby="tvos-trends-title">
+            <section class="ed-card tvos-admin-panel tvos-admin-panel--wide" aria-labelledby="tvos-trends-title" x-data="{ series: 'both', selected: '' }">
                 <div class="tvos-admin-panel-header">
                     <div>
                         <h3 id="tvos-trends-title">Évolution de l’activité</h3>
@@ -73,6 +73,13 @@
                         <span><i class="tvos-admin-dot tvos-admin-dot--green"></i>Publications</span>
                     </div>
                 </div>
+                <label class="tvos-admin-chart-note" style="display:block;margin-bottom:.75rem">Séries affichées
+                    <select x-model="series" class="rounded-lg border px-2 py-1">
+                        <option value="both">Conducteurs et publications</option>
+                        <option value="production">Conducteurs uniquement</option>
+                        <option value="published">Publications uniquement</option>
+                    </select>
+                </label>
                 <div class="tvos-admin-chart-scroll" role="region" aria-label="Histogramme de l’activité quotidienne" tabindex="0">
                     <div class="tvos-admin-trend-chart">
                         @foreach($adminAnalytics['trend'] as $day)
@@ -82,14 +89,27 @@
                             @endphp
                             <div class="tvos-admin-trend-day" style="--day-index: {{ $loop->index }}">
                                 <div class="tvos-admin-trend-bars">
-                                    <div class="tvos-admin-trend-bar tvos-admin-trend-bar--blue" style="height: {{ $pHeight }}%" title="{{ $day['production'] }} conducteurs le {{ $day['date'] }}"><span class="sr-only">{{ $day['production'] }} conducteurs</span></div>
-                                    <div class="tvos-admin-trend-bar tvos-admin-trend-bar--green" style="height: {{ $dHeight }}%" title="{{ $day['published'] }} publications le {{ $day['date'] }}"><span class="sr-only">{{ $day['published'] }} publications</span></div>
+                                    <div x-show="series !== 'published'" class="tvos-admin-trend-bar tvos-admin-trend-bar--blue" style="height: {{ $pHeight }}%" title="{{ $day['production'] }} conducteurs le {{ $day['date'] }}"><span class="sr-only">{{ $day['production'] }} conducteurs</span></div>
+                                    <div x-show="series !== 'production'" class="tvos-admin-trend-bar tvos-admin-trend-bar--green" style="height: {{ $dHeight }}%" title="{{ $day['published'] }} publications le {{ $day['date'] }}"><span class="sr-only">{{ $day['published'] }} publications</span></div>
                                 </div>
-                                <span class="tvos-admin-trend-label">{{ $day['label'] }}</span>
+                                <button type="button" class="tvos-admin-trend-label" style="min-height:44px"
+                                    aria-label="Détails du {{ $day['label'] }}"
+                                    :aria-pressed="selected === '{{ $day['date'] }}'"
+                                    :style="{ fontWeight: selected === '{{ $day['date'] }}' ? 'bold' : '', textDecoration: selected === '{{ $day['date'] }}' ? 'underline' : '' }"
+                                    @click="selected = '{{ $day['date'] }}'">{{ $day['label'] }}</button>
                                 <span class="sr-only">{{ $day['date'] }} : {{ $day['production'] }} conducteurs, {{ $day['published'] }} publications.</span>
                             </div>
                         @endforeach
                     </div>
+                </div>
+                <div aria-live="polite" aria-atomic="true">
+                    @foreach($adminAnalytics['trend'] as $day)
+                        <p x-cloak x-show="selected === '{{ $day['date'] }}'" class="tvos-admin-chart-note">
+                            <strong>{{ $day['label'] }}</strong>
+                            <span x-show="series !== 'published'"> · Conducteurs : {{ $day['production'] }}</span>
+                            <span x-show="series !== 'production'"> · Publications : {{ $day['published'] }}</span>
+                        </p>
+                    @endforeach
                 </div>
                 @php
                     $conducteursAffiches = array_sum(array_column($adminAnalytics['trend'], 'production'));
