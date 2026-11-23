@@ -26,6 +26,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
+        #app-sidebar { height: 100vh; height: 100dvh; max-width: 100%; }
+        .tv-nav-links { overscroll-behavior: contain; }
+        .tv-nav-links > * { flex-shrink: 0; }
+        #app-sidebar :is(a, button):focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+        @media (max-width: 1023.98px) {
+            #app-sidebar.-translate-x-full { visibility: hidden; }
+            .tv-nav-links :is(a, button) { min-height: 44px; }
+        }
+        @media (max-height: 500px) {
+            #app-sidebar { overflow-y: auto; }
+            #app-sidebar .tv-nav-links { flex: none; overflow: visible; }
+        }
+
         body { font-family: 'Inter', sans-serif; }
         /* ===== BLOC OFFICIEL GOOGLE MATERIAL SYMBOLS (rendu icône LIGATURES) =====
            Sans ce bloc complet, le browser affiche les NOMS des icônes en TEXTE
