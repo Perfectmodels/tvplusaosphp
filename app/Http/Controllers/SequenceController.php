@@ -135,13 +135,6 @@ final class SequenceController extends Controller
             'masque' => ['sometimes', 'boolean'],
         ]);
 
-        $typeEffectif = $valid['type']
-            ?? ($sequence->type instanceof TypeSequenceEnum ? $sequence->type->value : (string) $sequence->type);
-        $invitesEffectifs = array_key_exists('intervenant_ids', $valid)
-            ? ($valid['intervenant_ids'] ?? [])
-            : $sequence->intervenants()->pluck('id')->all();
-        $this->validerDebat($typeEffectif, $invitesEffectifs);
-
         $payload = collect($valid)->except(['duration_minutes', 'duration_seconds', 'intervenant_ids'])->toArray();
 
         if (isset($valid['duration_minutes'])) {
@@ -154,14 +147,24 @@ final class SequenceController extends Controller
             $this->validerDuree((int) $payload['duration_seconds']);
         }
 
-        $sequence->update($payload);
+        $sequence = \Illuminate\Support\Facades\DB::transaction(function () use ($sequence, $valid, $payload): Sequence {
+            $sequence = Sequence::query()->lockForUpdate()->findOrFail($sequence->id);
+            $typeEffectif = $valid['type']
+                ?? ($sequence->type instanceof TypeSequenceEnum ? $sequence->type->value : (string) $sequence->type);
+            if ($typeEffectif === TypeSequenceEnum::Debat->value) {
+                $invitesEffectifs = array_key_exists('intervenant_ids', $valid)
+                    ? ($valid['intervenant_ids'] ?? [])
+                    : $sequence->intervenants()->pluck('intervenants.id')->all();
+                $this->validerDebat($typeEffectif, $invitesEffectifs);
+            }
 
-        // La liste envoyée remplace TOUJOURS celle du sujet
-        // (liste vide = retirer tous les invités) — le front envoie le champ
-        // en permanence grâce à normaliserIntervenantIds().
-        if ($request->has('intervenant_ids')) {
-            $this->synchroniserIntervenants($sequence, array_map('intval', $valid['intervenant_ids'] ?? []));
-        }
+            $sequence->update($payload);
+            if (array_key_exists('intervenant_ids', $valid)) {
+                $this->synchroniserIntervenants($sequence, array_map('intval', $valid['intervenant_ids'] ?? []));
+            }
+
+            return $sequence;
+        });
 
         ConducteurChanged::dispatch((int) $sequence->conducteur_id);
 
