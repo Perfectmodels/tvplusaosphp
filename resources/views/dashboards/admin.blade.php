@@ -80,7 +80,7 @@
                                 $pHeight = $adminAnalytics['trendMax'] ? 100 * $day['production'] / $adminAnalytics['trendMax'] : 0;
                                 $dHeight = $adminAnalytics['trendMax'] ? 100 * $day['published'] / $adminAnalytics['trendMax'] : 0;
                             @endphp
-                            <div class="tvos-admin-trend-day">
+                            <div class="tvos-admin-trend-day" style="--day-index: {{ $loop->index }}">
                                 <div class="tvos-admin-trend-bars">
                                     <div class="tvos-admin-trend-bar tvos-admin-trend-bar--blue" style="height: {{ $pHeight }}%" title="{{ $day['production'] }} conducteurs le {{ $day['date'] }}"><span class="sr-only">{{ $day['production'] }} conducteurs</span></div>
                                     <div class="tvos-admin-trend-bar tvos-admin-trend-bar--green" style="height: {{ $dHeight }}%" title="{{ $day['published'] }} publications le {{ $day['date'] }}"><span class="sr-only">{{ $day['published'] }} publications</span></div>
@@ -91,7 +91,26 @@
                         @endforeach
                     </div>
                 </div>
-                <p class="tvos-admin-chart-note">Les publications comptées ont le statut « Publié » et une date de publication enregistrée. Les deux séries utilisent la même période graphique.</p>
+                @php
+                    $conducteursAffiches = array_sum(array_column($adminAnalytics['trend'], 'production'));
+                    $publicationsAffichees = array_sum(array_column($adminAnalytics['trend'], 'published'));
+                @endphp
+                @if($conducteursAffiches + $publicationsAffichees === 0)
+                    <p class="tvos-admin-chart-note">Aucun conducteur ni publication sur les jours affichés.</p>
+                @else
+                    <p class="tvos-admin-chart-note">Sur les jours affichés, <strong>{{ $conducteursAffiches }}</strong> conducteur(s) et <strong>{{ $publicationsAffichees }}</strong> publication(s). Les publications sont comptées à leur date de publication.</p>
+                @endif
+                <details class="tvos-admin-chart-data">
+                    <summary>Voir les chiffres par jour</summary>
+                    <table>
+                        <thead><tr><th scope="col">Jour</th><th scope="col">Conducteurs</th><th scope="col">Publications</th></tr></thead>
+                        <tbody>
+                            @foreach($adminAnalytics['trend'] as $day)
+                                <tr><th scope="row"><time datetime="{{ $day['date'] }}">{{ $day['label'] }}</time></th><td>{{ $day['production'] }}</td><td>{{ $day['published'] }}</td></tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </details>
             </section>
 
             @php
@@ -120,7 +139,7 @@
                         </div>
                         <div class="tvos-admin-status-legend">
                             @foreach($adminAnalytics['statuts'] as $statut)
-                                <div><span class="tvos-admin-dot" style="background: {{ $statut['color'] }}"></span><span>{{ $statut['label'] }}</span><strong>{{ $statut['total'] }}</strong></div>
+                                <div><span class="tvos-admin-dot" style="background: {{ $statut['color'] }}"></span><span>{{ $statut['label'] }}</span><strong>{{ $statut['total'] }} · {{ number_format(100 * $statut['total'] / $totalStatuts, 1, ',', ' ') }} %</strong></div>
                             @endforeach
                         </div>
                     </div>

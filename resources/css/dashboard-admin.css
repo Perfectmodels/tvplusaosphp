@@ -181,3 +181,25 @@
     .tvos-admin-metric { transition: none; }
     .tvos-admin-metric:hover { transform: none; }
 }
+
+.tvos-admin-chart-data { margin-top: .75rem; }
+.tvos-admin-chart-data summary { cursor: pointer; font-weight: 600; padding-block: .5rem; }
+.tvos-admin-chart-data table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tvos-admin-chart-data :is(td, th) { padding: .45rem .25rem; text-align: end; border-bottom: 1px solid var(--tvos-border, #cbd5e1); }
+.tvos-admin-chart-data th:first-child { text-align: start; }
+
+@media screen and (prefers-reduced-motion: no-preference) {
+    .tvos-admin-trend-bar {
+        transform-origin: bottom;
+        animation: tvos-bar-rise 480ms ease-out backwards;
+        animation-delay: calc(var(--day-index, 0) * 28ms);
+    }
+    .tvos-admin-ranking-track > div {
+        transform-origin: left;
+        animation: tvos-ranking-grow 550ms ease-out;
+    }
+    .tvos-admin-donut { animation: tvos-donut-appear 500ms ease-out; }
+}
+@keyframes tvos-bar-rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes tvos-ranking-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes tvos-donut-appear { from { opacity: .35; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
