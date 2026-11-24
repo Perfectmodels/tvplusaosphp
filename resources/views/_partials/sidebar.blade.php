@@ -1,9 +1,9 @@
 {{-- Sidebar TV+A OS Material3 — UNIFORME 100% SUR TOUTES LES PAGES: LOGO → ŒIL → MENU --}}
-<nav id="app-sidebar" aria-label="Navigation principale" tabindex="-1" class="bg-surface dark:bg-background w-64 h-screen fixed left-0 top-0 overflow-y-auto border-r border-outline-variant dark:border-surface-variant flex flex-col h-full py-stack-md shrink-0 z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+<nav id="app-sidebar" aria-label="Navigation principale" tabindex="-1" class="bg-surface dark:bg-background w-64 h-screen fixed left-0 top-0 overflow-y-auto border-r border-outline-variant dark:border-surface-variant flex flex-col h-full py-stack-md shrink-0 z-50 -translate-x-full transition-transform duration-300 ease-in-out">
     <!-- BLOC HEADER UNIFORME: [1] Logo TV+A OS  →  [2] Œil Bleu photo  →  [3] Subtitle -->
     <div class="relative px-6 mb-8 flex flex-col gap-2">
         <button type="button" data-sidebar-close
-                class="absolute right-3 top-0 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary lg:hidden"
+                class="absolute right-3 top-0 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low focus-visible:outline focus-visible:outline-2 focus-visible:outline-secondary"
                 aria-label="Fermer le menu principal">
             <span class="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
