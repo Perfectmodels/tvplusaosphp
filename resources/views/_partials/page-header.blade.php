@@ -32,7 +32,7 @@
     <div class="ui-topbar-heading flex items-center gap-4 flex-1 min-w-0 max-sm:w-full max-sm:flex-none">
         {{-- Burger : ouvre le drawer de navigation sur mobile/tablette --}}
         <button id="sidebar-toggle" type="button" aria-controls="app-sidebar" aria-expanded="false"
-                class="lg:hidden shrink-0 inline-flex items-center justify-center p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"
+                class="shrink-0 inline-flex items-center justify-center p-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors"
                 aria-label="Ouvrir le menu de navigation">
             <span class="material-symbols-outlined">menu</span>
         </button>
