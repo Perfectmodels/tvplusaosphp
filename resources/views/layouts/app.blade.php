@@ -26,6 +26,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
+        #app-sidebar.-translate-x-full { visibility: hidden; }
+        #app-sidebar { max-width: calc(100vw - 44px); }
         body { font-family: 'Inter', sans-serif; }
         /* ===== BLOC OFFICIEL GOOGLE MATERIAL SYMBOLS (rendu icône LIGATURES) =====
            Sans ce bloc complet, le browser affiche les NOMS des icônes en TEXTE
@@ -140,10 +142,10 @@
     @include('_partials.sidebar')
 
     {{-- Overlay mobile quand le drawer est ouvert --}}
-    <div id="sidebar-overlay" aria-hidden="true" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
+    <div id="sidebar-overlay" aria-hidden="true" class="fixed inset-0 bg-black/40 z-40 hidden"></div>
 
     {{-- Zone principale FUNCTIONAL (STRICTE prototype HTML dashboard.html#L198-L237) --}}
-    <div class="flex-1 flex flex-col lg:pl-64 w-full min-w-0 h-full relative">
+    <div class="flex-1 flex flex-col w-full min-w-0 h-full relative">
 
         {{-- Compatibilité composant <x-app-layout> : le slot "header" devient le titre de la topbar --}}
         @php
@@ -326,10 +328,8 @@
                 toggle.setAttribute('aria-expanded', 'true');
                 toggle.setAttribute('aria-label', 'Fermer le menu de navigation');
             }
-            if (window.innerWidth < 1024) {
-                document.documentElement.classList.add('ui-sidebar-open');
-                (sidebar.querySelector('[data-sidebar-close]') || sidebar).focus({ preventScroll: true });
-            }
+            document.documentElement.classList.add('ui-sidebar-open');
+            (sidebar.querySelector('[data-sidebar-close]') || sidebar).focus({ preventScroll: true });
         }
 
         function fermer(restoreFocus) {
@@ -340,7 +340,7 @@
                 toggle.setAttribute('aria-expanded', 'false');
                 toggle.setAttribute('aria-label', 'Ouvrir le menu de navigation');
             }
-            if (restoreFocus && toggle && window.innerWidth < 1024) toggle.focus();
+            if (restoreFocus && toggle) toggle.focus();
         }
 
         document.addEventListener('click', function (event) {
@@ -371,7 +371,7 @@
 
         // Keep keyboard navigation inside the mobile drawer while it is open.
         sidebar.addEventListener('keydown', function (event) {
-            if (event.key !== 'Tab' || window.innerWidth >= 1024 || estFerme()) return;
+            if (event.key !== 'Tab' || estFerme()) return;
             var candidates = Array.from(sidebar.querySelectorAll(
                 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
             )).filter(function (el) { return el.getClientRects().length > 0; });
@@ -384,9 +384,6 @@
             }
         });
 
-        window.addEventListener('resize', function () {
-            if (window.innerWidth >= 1024) fermer(false);
-        }, { passive: true });
     })();
     </script>
 
